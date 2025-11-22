@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Welcome to SmartReg</h1>
+        <p class="lead mb-5">
+            A demonstration of Advanced Database Management Systems concepts including ACID transactions,
+            concurrency control, and isolation levels.
+        </p>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-book-open text-primary mb-3 fa-2x"></i><br>Course
+                            Catalog</h5>
+                        <p class="card-text">Browse available courses and sections for the upcoming semester.</p>
+                        <a href="{% url 'course-list' %}" class="btn btn-outline-primary">View Courses</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-database text-success mb-3 fa-2x"></i><br>ADBMS Demos
+                        </h5>
+                        <p class="card-text">Explore database concepts like Isolation Levels and Locking.</p>
+                        <a href="#" class="btn btn-outline-success">Explore Demos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
