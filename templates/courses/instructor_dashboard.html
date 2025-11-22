@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Instructor Dashboard - SmartReg{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Instructor Dashboard</h2>
+            <div>
+                <a href="{% url 'create-course' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Create Course
+                </a>
+                <a href="{% url 'create-section' %}" class="btn btn-success">
+                    <i class="fas fa-plus-circle"></i> Add Section
+                </a>
+            </div>
+        </div>
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- My Courses Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">My Courses</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Title</th>
+                                <th>Credits</th>
+                                <th>Sections</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in courses %}
+                            <tr>
+                                <td><strong>{{ course.code }}</strong></td>
+                                <td>{{ course.title }}</td>
+                                <td>{{ course.credits }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ course.sections.count }} Section(s)
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'edit-course' course.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center my-4">You are not teaching any courses yet. Create a course to get
+                    started!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- My Teaching Schedule Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">My Teaching Schedule</h5>
+            </div>
+            <div class="card-body">
+                {% if sections %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Semester</th>
+                                <th>Schedule</th>
+                                <th>Room</th>
+                                <th>Capacity</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for section in sections %}
+                            <tr>
+                                <td>
+                                    <strong>{{ section.course.code }}</strong><br>
+                                    {{ section.course.title }}
+                                </td>
+                                <td>{{ section.semester }}</td>
+                                <td>{{ section.schedule }}</td>
+                                <td>{{ section.room_number }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ section.capacity }} Seats</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'view-section-students' section.id %}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-users"></i> View Students
+                                    </a>
+                                    <a href="{% url 'edit-section' section.id %}"
+                                        class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center my-4">You are not teaching any sections yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

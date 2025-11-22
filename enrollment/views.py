@@ -1,8 +1,11 @@
 from rest_framework import viewsets, permissions, status, views
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
 from django.db import transaction
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from .models import Enrollment
 from .serializers import EnrollmentSerializer
 from courses.models import Section
@@ -10,7 +13,31 @@ from courses.models import Section
 @login_required
 def my_enrollments(request):
     enrollments = Enrollment.objects.filter(student=request.user).select_related('section', 'section__course', 'section__instructor')
-    return render(request, 'enrollment/my_enrollments.html', {'enrollments': enrollments})
+    context = {
+        'enrollments': enrollments
+    }
+    return render(request, 'enrollment/my_enrollments.html', context)
+
+@login_required
+@require_POST
+def drop_course(request, section_id):
+    """Drop a course (unenroll) with ACID transaction"""
+    try:
+        with transaction.atomic():
+            # Get enrollment and lock it
+            enrollment = get_object_or_404(
+                Enrollment.objects.select_for_update(),
+                student=request.user,
+                section_id=section_id
+            )
+            
+            # Delete enrollment
+            enrollment.delete()
+            
+            return JsonResponse({'status': 'success', 'message': 'Successfully dropped course'})
+            
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 class EnrollmentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = EnrollmentSerializer
@@ -27,36 +54,89 @@ class EnrollmentViewSet(viewsets.ReadOnlyModelViewSet):
 class EnrollStudentView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    def parse_schedule(self, schedule_str):
+        """
+        Parse schedule string like "Mon/Wed 10:00-11:30" into structured data.
+        Returns a list of dicts: [{'day': 'Mon', 'start': 600, 'end': 690}, ...]
+        Time is converted to minutes from midnight.
+        """
+        try:
+            parts = schedule_str.split(' ')
+            days_part = parts[0]
+            time_part = parts[1]
+            
+            days = days_part.split('/')
+            start_str, end_str = time_part.split('-')
+            
+            def time_to_minutes(t_str):
+                h, m = map(int, t_str.split(':'))
+                return h * 60 + m
+            
+            start_min = time_to_minutes(start_str)
+            end_min = time_to_minutes(end_str)
+            
+            parsed = []
+            for day in days:
+                parsed.append({
+                    'day': day,
+                    'start': start_min,
+                    'end': end_min
+                })
+            return parsed
+        except Exception:
+            # If parsing fails, assume no conflict (or handle stricter)
+            return []
+
+    def check_conflict(self, schedule1, schedule2):
+        """Check if two parsed schedules overlap"""
+        for slot1 in schedule1:
+            for slot2 in schedule2:
+                if slot1['day'] == slot2['day']:
+                    # Check time overlap: (StartA < EndB) and (EndA > StartB)
+                    if slot1['start'] < slot2['end'] and slot1['end'] > slot2['start']:
+                        return True
+        return False
+
     def post(self, request):
         section_id = request.data.get('section_id')
-        student = request.user
+        if not section_id:
+            return Response({'error': 'Section ID required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if student.role != 'STUDENT':
-            return Response({'error': 'Only students can enroll'}, status=status.HTTP_403_FORBIDDEN)
-
-        # ACID Transaction Start
         try:
             with transaction.atomic():
-                # Lock the section row for update to prevent race conditions
-                # This is a pessimistic lock (SELECT ... FOR UPDATE)
+                # Lock the section to prevent race conditions
                 section = Section.objects.select_for_update().get(id=section_id)
-
-                # Check if already enrolled
-                if Enrollment.objects.filter(student=student, section=section).exists():
-                    return Response({'error': 'Already enrolled in this section'}, status=status.HTTP_400_BAD_REQUEST)
-
+                
                 # Check capacity
-                current_enrollment_count = Enrollment.objects.filter(section=section).count()
-                if current_enrollment_count >= section.capacity:
+                current_enrollment = Enrollment.objects.filter(section=section).count()
+                if current_enrollment >= section.capacity:
                     return Response({'error': 'Section is full'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Create enrollment
-                enrollment = Enrollment.objects.create(student=student, section=section)
+                # Check if already enrolled
+                if Enrollment.objects.filter(student=request.user, section=section).exists():
+                    return Response({'error': 'Already enrolled in this section'}, status=status.HTTP_400_BAD_REQUEST)
                 
-                serializer = EnrollmentSerializer(enrollment)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                # Check for schedule conflicts
+                new_schedule = self.parse_schedule(section.schedule)
+                if new_schedule:
+                    existing_enrollments = Enrollment.objects.filter(
+                        student=request.user,
+                        section__semester=section.semester  # Only check conflicts in same semester
+                    ).select_related('section')
+                    
+                    for enrollment in existing_enrollments:
+                        existing_schedule = self.parse_schedule(enrollment.section.schedule)
+                        if self.check_conflict(new_schedule, existing_schedule):
+                            return Response({
+                                'error': f"Schedule conflict with {enrollment.section.course.code} ({enrollment.section.schedule})"
+                            }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create enrollment
+                Enrollment.objects.create(student=request.user, section=section)
+                
+                return Response({'status': 'enrolled'}, status=status.HTTP_201_CREATED)
 
         except Section.DoesNotExist:
             return Response({'error': 'Section not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

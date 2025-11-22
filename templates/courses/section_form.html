@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Section - SmartReg{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ action }} Section</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.course_code.id_for_label }}" class="form-label">Course Code *</label>
+                        {{ form.course_code }}
+                        {% if form.course_code.errors %}
+                        <div class="text-danger">{{ form.course_code.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Enter the exact course code (e.g., CS101)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.semester.id_for_label }}" class="form-label">Semester *</label>
+                        {{ form.semester }}
+                        {% if form.semester.errors %}
+                        <div class="text-danger">{{ form.semester.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">e.g., Fall 2025, Spring 2026</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.schedule.id_for_label }}" class="form-label">Schedule *</label>
+                        {{ form.schedule }}
+                        {% if form.schedule.errors %}
+                        <div class="text-danger">{{ form.schedule.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">e.g., Mon/Wed 10:00-11:30</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity *</label>
+                                {{ form.capacity }}
+                                {% if form.capacity.errors %}
+                                <div class="text-danger">{{ form.capacity.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.room_number.id_for_label }}" class="form-label">Room Number
+                                    *</label>
+                                {{ form.room_number }}
+                                {% if form.room_number.errors %}
+                                <div class="text-danger">{{ form.room_number.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if action == 'Create' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> You will be automatically assigned as the instructor for this
+                        section.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'instructor-dashboard' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-success">{{ action }} Section</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,12 +19,23 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from .views import home
 from users.views import register
-from courses.views import course_list
+from courses.views import (
+    course_list, instructor_dashboard, 
+    create_course, edit_course, 
+    create_section, edit_section,
+    view_section_students
+)
 from enrollment.views import my_enrollments
 
 urlpatterns = [
     path('', home, name='home'),
-    path('courses/', course_list, name='course-list'),
+    path('courses/', course_list, name='courses'),  # Renamed from 'course-list' to avoid API conflict
+    path('instructor/dashboard/', instructor_dashboard, name='instructor-dashboard'),
+    path('instructor/courses/create/', create_course, name='create-course'),
+    path('instructor/courses/<int:pk>/edit/', edit_course, name='edit-course'),
+    path('instructor/sections/create/', create_section, name='create-section'),
+    path('instructor/sections/<int:pk>/edit/', edit_section, name='edit-section'),
+    path('instructor/sections/<int:pk>/students/', view_section_students, name='view-section-students'),
     path('my-enrollments/', my_enrollments, name='my-enrollments'),
     path('register/', register, name='register'),
     path('accounts/', include('django.contrib.auth.urls')),

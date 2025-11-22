@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Students - {{ section.course.code }} - SmartReg{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'instructor-dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Section Students</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users"></i> Enrolled Students
+                </h5>
+                <small class="text-muted">
+                    {{ section.course.code }} - {{ section.course.title }} | {{ section.semester }} | {{
+                    section.schedule }}
+                </small>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <strong>Enrollment Status:</strong> {{ enrolled_count }} / {{ section.capacity }} students
+                            {% if enrolled_count >= section.capacity %}
+                            <span class="badge bg-danger ms-2">FULL</span>
+                            {% else %}
+                            <span class="badge bg-success ms-2">{{ section.capacity|add:"-enrolled_count" }} spots
+                                available</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if enrollments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Student Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Enrolled Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for enrollment in enrollments %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if enrollment.student.first_name %}
+                                    {{ enrollment.student.first_name }} {{ enrollment.student.last_name }}
+                                    {% else %}
+                                    <em class="text-muted">Name not set</em>
+                                    {% endif %}
+                                </td>
+                                <td>{{ enrollment.student.username }}</td>
+                                <td>{{ enrollment.student.email|default:"N/A" }}</td>
+                                <td>{{ enrollment.enrolled_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning text-center my-4">
+                    <i class="fas fa-exclamation-triangle"></i> No students enrolled in this section yet.
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'instructor-dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
