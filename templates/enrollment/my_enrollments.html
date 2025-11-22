@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}My Enrollments - SmartReg{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-graduation-cap text-primary me-2"></i>My Enrollments</h2>
+
+{% if enrollments %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Section</th>
+                        <th>Instructor</th>
+                        <th>Schedule</th>
+                        <th>Room</th>
+                        <th>Enrolled At</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>
+                            <strong>{{ enrollment.section.course.code }}</strong><br>
+                            {{ enrollment.section.course.title }}
+                        </td>
+                        <td>{{ enrollment.section.semester }} (Sec {{ enrollment.section.id }})</td>
+                        <td>{{
+                            enrollment.section.instructor.get_full_name|default:enrollment.section.instructor.username
+                            }}</td>
+                        <td>{{ enrollment.section.schedule }}</td>
+                        <td>{{ enrollment.section.room_number }}</td>
+                        <td>{{ enrollment.enrolled_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            {% if enrollment.grade %}
+                            <span class="badge bg-success">{{ enrollment.grade }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    You are not enrolled in any courses yet. <a href="{% url 'course-list' %}">Browse Courses</a>
+</div>
+{% endif %}
+{% endblock %}

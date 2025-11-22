@@ -18,9 +18,15 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from .views import home
+from users.views import register
+from courses.views import course_list
+from enrollment.views import my_enrollments
 
 urlpatterns = [
     path('', home, name='home'),
+    path('courses/', course_list, name='course-list'),
+    path('my-enrollments/', my_enrollments, name='my-enrollments'),
+    path('register/', register, name='register'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),

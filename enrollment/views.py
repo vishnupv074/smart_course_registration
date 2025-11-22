@@ -1,10 +1,16 @@
 from rest_framework import viewsets, permissions, status, views
 from rest_framework.response import Response
 from django.db import transaction
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
+from django.contrib.auth.decorators import login_required
 from .models import Enrollment
 from .serializers import EnrollmentSerializer
 from courses.models import Section
+
+@login_required
+def my_enrollments(request):
+    enrollments = Enrollment.objects.filter(student=request.user).select_related('section', 'section__course', 'section__instructor')
+    return render(request, 'enrollment/my_enrollments.html', {'enrollments': enrollments})
 
 class EnrollmentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = EnrollmentSerializer
