@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/', include('courses.urls')),
     path('api/', include('enrollment.urls')),
+    path('adbms/', include('adbms_demo.urls')),
     
     # API Schema & Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

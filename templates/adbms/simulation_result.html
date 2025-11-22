@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ results.demo_name }} - SmartReg{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="mb-4">{{ results.demo_name }} Demo</h2>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>Configuration</strong>
+            </div>
+            <div class="card-body">
+                <p><strong>Isolation Level:</strong> {{ results.isolation_level }}</p>
+                <p><strong>Target Section ID:</strong> {{ results.section_id }}</p>
+                <p><strong>Initial Value:</strong> {{ results.initial_value }}</p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <strong>Execution Log</strong>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Step</th>
+                            <th>Action</th>
+                            <th>Value Read/Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for step in results.steps %}
+                        <tr>
+                            <td>{{ step.time }}</td>
+                            <td>{{ step.step }}</td>
+                            <td>{{ step.action }}</td>
+                            <td><strong>{{ step.value }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="alert {% if results.anomaly_detected %}alert-warning{% else %}alert-success{% endif %}">
+            <h4 class="alert-heading">Conclusion</h4>
+            <p>{{ results.conclusion }}</p>
+        </div>
+
+        <div class="text-center">
+            <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

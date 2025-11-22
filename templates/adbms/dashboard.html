@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}ADBMS Demos - SmartReg{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-database text-success me-2"></i>ADBMS Concepts Demonstration</h2>
+
+<div class="row g-4">
+    <!-- Isolation Levels -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Isolation Levels</h5>
+            </div>
+            <div class="card-body">
+                <p>Simulate transaction isolation anomalies and how PostgreSQL handles them.</p>
+                <div class="list-group">
+                    <a href="{% url 'non-repeatable-read' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Non-Repeatable Read</h6>
+                            <small>Read Committed</small>
+                        </div>
+                        <small class="text-muted">Value changes between two reads in same transaction.</small>
+                    </a>
+                    <a href="{% url 'phantom-read' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Phantom Read</h6>
+                            <small>Repeatable Read</small>
+                        </div>
+                        <small class="text-muted">New rows appear between two reads.</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Concurrency Control -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Concurrency & Locking</h5>
+            </div>
+            <div class="card-body">
+                <p>Visualize locking mechanisms and deadlock scenarios.</p>
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action disabled">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Row Locking</h6>
+                            <small>SELECT FOR UPDATE</small>
+                        </div>
+                        <small class="text-muted">Simulate concurrent updates to the same seat.</small>
+                    </a>
+                    <a href="{% url 'deadlock' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Deadlock Simulation</h6>
+                            <small>Circular Wait</small>
+                        </div>
+                        <small class="text-muted">Induce a deadlock between two transactions.</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

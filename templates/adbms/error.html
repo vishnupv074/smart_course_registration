@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Error - SmartReg{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="alert alert-danger text-center" role="alert">
+            <h4 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Error</h4>
+            <p>{{ message }}</p>
+            <hr>
+            <p class="mb-0">
+                <a href="{% url 'adbms-dashboard' %}" class="btn btn-outline-danger">Back to Dashboard</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
