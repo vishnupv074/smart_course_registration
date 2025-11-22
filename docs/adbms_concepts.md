@@ -197,3 +197,31 @@ The results are then parsed and displayed on the dashboard, showing the stark co
 ### Conclusion
 Indexing provides massive performance gains for lookup queries on large datasets. However, indexes should be chosen carefully as they slow down `INSERT`, `UPDATE`, and `DELETE` operations.
 
+
+---
+
+## 5. Query Optimization Visualizer
+
+### Concept
+Query Optimization is the process of selecting the most efficient execution plan for a SQL query. The database optimizer considers various factors like table size, available indexes, and join algorithms.
+
+### Demo in Application
+-   **URL**: `http://localhost:8000/adbms/query-optimization/`
+-   **Features**:
+    -   **Interactive Input**: Users can input custom SQL queries.
+    -   **Visual Feedback**: Displays Execution Time, Total Cost, and the Query Plan (e.g., `Seq Scan`, `Index Scan`, `Hash Join`).
+    -   **Presets**: Pre-loaded queries to demonstrate specific optimization scenarios.
+
+### Technical Implementation
+The tool accepts a raw SQL query, validates it (restricting to `SELECT` for safety), and wraps it in `EXPLAIN (ANALYZE, FORMAT JSON)`. The JSON output is parsed to extract key performance metrics.
+
+**Code Snippet (`adbms_demo/views.py`):**
+```python
+cursor.execute(f"EXPLAIN (ANALYZE, FORMAT JSON) {query}")
+explain_output = cursor.fetchone()[0][0]
+results = {
+    'execution_time': explain_output['Execution Time'],
+    'total_cost': explain_output['Plan']['Total Cost'],
+    'plan_node': explain_output['Plan']['Node Type']
+}
+```

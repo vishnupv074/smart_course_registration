@@ -327,3 +327,41 @@ def indexing_benchmark(request):
 
 
 
+
+def query_optimization(request):
+    """
+    Visualizes Query Optimization using EXPLAIN ANALYZE.
+    Allows users to input SQL queries and see the execution plan and cost.
+    """
+    default_query = "SELECT * FROM courses_course WHERE code = 'CS101'"
+    query = request.POST.get('query', default_query)
+    results = None
+    error = None
+
+    if request.method == 'POST':
+        try:
+            # Basic validation for demo safety
+            if not query.strip().lower().startswith('select'):
+                raise Exception("Only SELECT queries are allowed for this demo.")
+
+            with connection.cursor() as cursor:
+                # Run EXPLAIN ANALYZE
+                cursor.execute(f"EXPLAIN (ANALYZE, FORMAT JSON) {query}")
+                explain_output = cursor.fetchone()[0][0]
+            
+            results = {
+                'query': query,
+                'execution_time': round(explain_output.get('Execution Time', 0), 3),
+                'planning_time': round(explain_output.get('Planning Time', 0), 3),
+                'total_cost': explain_output['Plan']['Total Cost'],
+                'plan_node': explain_output['Plan']['Node Type'],
+                'full_plan': explain_output
+            }
+        except Exception as e:
+            error = str(e)
+
+    return render(request, 'adbms/query_optimization.html', {
+        'query': query,
+        'results': results,
+        'error': error
+    })

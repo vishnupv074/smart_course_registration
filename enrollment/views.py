@@ -12,6 +12,10 @@ from courses.models import Section
 
 @login_required
 def my_enrollments(request):
+    """
+    Displays the list of courses the current student is enrolled in.
+    Includes instructor details and drop functionality.
+    """
     enrollments = Enrollment.objects.filter(student=request.user).select_related('section', 'section__course', 'section__instructor')
     context = {
         'enrollments': enrollments
@@ -52,6 +56,10 @@ class EnrollmentViewSet(viewsets.ReadOnlyModelViewSet):
         return Enrollment.objects.all()
 
 class EnrollStudentView(views.APIView):
+    """
+    API endpoint for enrolling a student in a course section.
+    Handles ACID transactions, capacity checks, and schedule conflict detection.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def parse_schedule(self, schedule_str):

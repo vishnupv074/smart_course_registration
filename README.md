@@ -4,10 +4,22 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
 
 ## Features
 
--   **User Management**: Student, Instructor, and Admin roles.
--   **Course Management**: Create and manage courses and sections.
--   **Enrollment System**: ACID-compliant enrollment with capacity checks and concurrency control.
--   **ADBMS Demos**: Visualizations and simulations for isolation anomalies, locking, and performance tuning (In Progress).
+### Core Functionality
+-   **User Management**: Role-based access for Students, Instructors, and Admins.
+-   **Course Catalog**: Searchable and paginated list of courses and sections.
+-   **Instructor Dashboard**: Manage courses, sections, and view enrolled students.
+-   **Student Dashboard**: View enrollments, browse courses, and drop courses.
+-   **Enrollment System**:
+    -   **ACID Compliance**: Atomic enrollment transactions with capacity checks.
+    -   **Conflict Detection**: Prevents scheduling conflicts.
+    -   **Concurrency Control**: Pessimistic locking to prevent race conditions.
+
+### ADBMS Demonstrations
+Interactive tools to visualize advanced database concepts:
+-   **Isolation Levels**: Simulate anomalies like Non-Repeatable Reads and Phantom Reads.
+-   **Concurrency & Locking**: Visualize Row Locking and Deadlock scenarios.
+-   **Indexing**: Benchmark performance of B-Tree indexes vs Sequential Scans.
+-   **Query Optimization**: Visualizer for `EXPLAIN ANALYZE` to analyze query costs and execution plans.
 
 ## Quick Start
 
@@ -24,7 +36,11 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
     ```bash
     docker-compose exec web python manage.py migrate
     ```
-5.  **Access the App**:
+5.  **Create Superuser**:
+    ```bash
+    docker-compose exec web python manage.py createsuperuser
+    ```
+6.  **Access the App**:
     -   Web: [http://localhost:8000/](http://localhost:8000/)
     -   API Docs: [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/)
 
@@ -32,4 +48,4 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
 
 Detailed documentation is available in the `docs/` directory:
 -   [Setup Guide](docs/setup_guide.md)
--   [Project Structure](docs/project_structure.md)
+-   [ADBMS Concepts](docs/adbms_concepts.md)

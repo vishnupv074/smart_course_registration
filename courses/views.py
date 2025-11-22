@@ -9,6 +9,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 def course_list(request):
+    """
+    Displays a paginated and searchable list of courses.
+    Includes optimization to prevent N+1 queries.
+    """
     # Get search query if provided
     search_query = request.GET.get('search', '').strip()
     
@@ -34,6 +38,10 @@ def course_list(request):
 
 @login_required
 def instructor_dashboard(request):
+    """
+    Displays the instructor's dashboard with their courses and teaching schedule.
+    Restricted to users with INSTRUCTOR role.
+    """
     if request.user.role != 'INSTRUCTOR':
         messages.error(request, "Access denied. Instructor role required.")
         return redirect('home')

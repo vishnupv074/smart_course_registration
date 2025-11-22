@@ -7,4 +7,5 @@ urlpatterns = [
     path('phantom-read/', views.phantom_read, name='phantom-read'),
     path('deadlock/', views.deadlock_simulation, name='deadlock'),
     path('indexing/', views.indexing_benchmark, name='indexing-benchmark'),
+    path('query-optimization/', views.query_optimization, name='query-optimization'),
 ]
