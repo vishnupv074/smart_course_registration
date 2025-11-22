@@ -11,24 +11,37 @@ def dashboard(request):
 
 def non_repeatable_read(request):
     """
-    Demonstrates Non-Repeatable Read anomaly.
-    1. Transaction A reads a row.
-    2. Transaction B (Celery task) updates the row and commits.
-    3. Transaction A reads the row again and sees the new value.
-    This happens in READ COMMITTED isolation level.
+    Demonstrates the 'Non-Repeatable Read' anomaly.
+    
+    THEORY:
+    A Non-Repeatable Read occurs when a transaction reads the same row twice but gets different data each time.
+    This happens because another concurrent transaction modified and committed the data between the two reads.
+    This anomaly is possible in the 'READ COMMITTED' isolation level (PostgreSQL default).
+    
+    SIMULATION STEPS:
+    1. Transaction A (this view) starts an atomic block (transaction).
+    2. Transaction A reads the Section capacity (Read 1).
+    3. Transaction A triggers a background Celery task (Transaction B).
+    4. Transaction B updates the same Section's capacity and commits.
+    5. Transaction A waits for B to finish.
+    6. Transaction A reads the Section capacity again (Read 2).
+    
+    EXPECTED RESULT:
+    In READ COMMITTED, Read 2 will show the new value committed by Transaction B, differing from Read 1.
     """
     # Ensure we have a section to test with
     section = Section.objects.first()
     if not section:
         return render(request, 'adbms/error.html', {'message': 'No sections available for demo.'})
 
-    # Reset capacity for consistent demo
+    # Reset capacity to a known state (50) for consistent demo results
     initial_capacity = 50
     section.capacity = initial_capacity
     section.save()
 
     results = {
         'demo_name': 'Non-Repeatable Read',
+        'description': 'A Non-Repeatable Read occurs when a transaction reads the same row twice but gets different data each time. This happens because another concurrent transaction modified and committed the data between the two reads.',
         'isolation_level': 'READ COMMITTED (Default)',
         'section_id': section.id,
         'initial_value': initial_capacity,
@@ -36,8 +49,10 @@ def non_repeatable_read(request):
     }
 
     # Start Transaction A
+    # atomic() ensures all database operations inside this block are part of a single transaction.
     with transaction.atomic():
         # Step 1: First Read
+        # We fetch the current state of the section.
         s1 = Section.objects.get(id=section.id)
         results['steps'].append({
             'step': 1, 
@@ -47,7 +62,8 @@ def non_repeatable_read(request):
         })
 
         # Step 2: Trigger Transaction B (Background Task)
-        # We change capacity to 100
+        # We queue a Celery task that will run in a separate transaction (Transaction B).
+        # We pass a delay to ensure it runs *after* our first read but *before* our second read.
         new_capacity = 100
         update_section_capacity.delay(section.id, new_capacity, delay=1)
         results['steps'].append({
@@ -57,12 +73,15 @@ def non_repeatable_read(request):
             'time': 'T2'
         })
 
-        # Sleep to allow Transaction B to complete
+        # Sleep to allow Transaction B to complete its update and commit.
+        # In a real scenario, this delay represents processing time or network latency.
         time.sleep(3)
 
         # Step 3: Second Read
-        # In READ COMMITTED, this should see the new value (100)
-        # In REPEATABLE READ, this should see the old value (50)
+        # We fetch the section again within the SAME transaction (Transaction A).
+        # In READ COMMITTED, this query sees data committed by other transactions (Transaction B).
+        # Therefore, s2.capacity will be 100.
+        # If we were using REPEATABLE READ, s2.capacity would still be 50.
         s2 = Section.objects.get(id=section.id)
         results['steps'].append({
             'step': 3, 
@@ -71,6 +90,7 @@ def non_repeatable_read(request):
             'time': 'T3'
         })
         
+        # Check if the value changed
         anomaly_detected = s1.capacity != s2.capacity
         results['anomaly_detected'] = anomaly_detected
         results['conclusion'] = "Anomaly Detected! The value changed within the same transaction." if anomaly_detected else "No Anomaly. The value remained consistent."
@@ -79,20 +99,32 @@ def non_repeatable_read(request):
 
 def phantom_read(request):
     """
-    Demonstrates Phantom Read anomaly.
-    1. Transaction A counts rows matching a criteria.
-    2. Transaction B (Celery task) inserts a new row matching criteria.
-    3. Transaction A counts rows again and sees a different count.
+    Demonstrates the 'Phantom Read' anomaly.
+    
+    THEORY:
+    A Phantom Read occurs when a transaction executes a query returning a set of rows that satisfy a search condition,
+    but a concurrent transaction inserts a new row that matches the condition.
+    If the first transaction repeats the query, it sees the "phantom" row (a row that wasn't there before).
+    
+    SIMULATION STEPS:
+    1. Transaction A (this view) counts the number of enrollments for a section.
+    2. Transaction A triggers a background Celery task (Transaction B).
+    3. Transaction B inserts a NEW enrollment for that section and commits.
+    4. Transaction A counts the enrollments again.
+    
+    EXPECTED RESULT:
+    In READ COMMITTED, the second count will be higher than the first, revealing the "phantom" record.
     """
     section = Section.objects.first()
     if not section:
         return render(request, 'adbms/error.html', {'message': 'No sections available for demo.'})
 
-    # Cleanup phantom user enrollment to ensure clean state
+    # Cleanup phantom user enrollment to ensure clean state for the demo
     Enrollment.objects.filter(student__username='phantom_user').delete()
 
     results = {
         'demo_name': 'Phantom Read',
+        'description': 'A Phantom Read occurs when a transaction executes a query returning a set of rows that satisfy a search condition, but a concurrent transaction inserts a new row that matches the condition. If the first transaction repeats the query, it sees the "phantom" row.',
         'isolation_level': 'READ COMMITTED (Default)',
         'section_id': section.id,
         'initial_value': 'N/A',
@@ -101,6 +133,7 @@ def phantom_read(request):
 
     with transaction.atomic():
         # Step 1: First Count
+        # We count how many students are currently enrolled.
         count1 = Enrollment.objects.filter(section=section).count()
         results['steps'].append({
             'step': 1, 
@@ -110,6 +143,7 @@ def phantom_read(request):
         })
 
         # Step 2: Trigger Transaction B
+        # Queue a task to insert a new enrollment record.
         insert_enrollment.delay(section.id, delay=1)
         results['steps'].append({
             'step': 2, 
@@ -118,10 +152,12 @@ def phantom_read(request):
             'time': 'T2'
         })
 
-        # Sleep to allow Transaction B to complete
+        # Sleep to allow Transaction B to complete the insertion.
         time.sleep(3)
 
         # Step 3: Second Count
+        # We run the SAME count query again.
+        # In READ COMMITTED, this query sees the new row inserted by Transaction B.
         count2 = Enrollment.objects.filter(section=section).count()
         results['steps'].append({
             'step': 3, 
@@ -139,8 +175,23 @@ def phantom_read(request):
 
 def deadlock_simulation(request):
     """
-    Demonstrates Deadlock.
-    Triggers two background tasks that try to acquire locks in reverse order.
+    Demonstrates a Database Deadlock.
+    
+    THEORY:
+    A Deadlock occurs when two transactions are waiting for each other to give up locks.
+    Transaction A holds Lock 1 and waits for Lock 2.
+    Transaction B holds Lock 2 and waits for Lock 1.
+    Neither can proceed, creating a cycle.
+    
+    SIMULATION STEPS:
+    1. We identify two resources (Section 1 and Section 2).
+    2. We trigger two background tasks (Task A and Task B) simultaneously.
+    3. Task A: Locks Section 1 -> Sleeps -> Tries to Lock Section 2.
+    4. Task B: Locks Section 2 -> Sleeps -> Tries to Lock Section 1.
+    
+    EXPECTED RESULT:
+    PostgreSQL's deadlock detector will identify the circular wait and forcibly terminate one of the transactions
+    to allow the other to proceed. The terminated transaction will raise a DeadlockDetected exception.
     """
     # Ensure we have two sections
     s1 = Section.objects.first()
@@ -166,6 +217,7 @@ def deadlock_simulation(request):
 
     results = {
         'demo_name': 'Deadlock Simulation',
+        'description': 'A Deadlock occurs when two transactions are waiting for each other to give up locks. Transaction A holds Lock 1 and waits for Lock 2, while Transaction B holds Lock 2 and waits for Lock 1.',
         'isolation_level': 'READ COMMITTED (Default)',
         'section_id': f"{s1.id} & {s2.id}",
         'initial_value': 'N/A',
@@ -210,7 +262,17 @@ def deadlock_simulation(request):
 def indexing_benchmark(request):
     """
     Benchmarks query performance with and without indexes.
-    Uses EXPLAIN ANALYZE to get execution time.
+    
+    THEORY:
+    Indexes are data structures (like B-Trees) that allow the database to find rows efficiently (O(log N))
+    without scanning the entire table (O(N)).
+    
+    SIMULATION STEPS:
+    1. We execute a query searching for a substring in 'description' (Unindexed).
+       - This forces a Sequential Scan (checking every row).
+    2. We execute a query searching for a specific 'code' (Indexed).
+       - This allows an Index Scan (jumping to the row).
+    3. We use 'EXPLAIN (ANALYZE, FORMAT JSON)' to get the actual execution time from PostgreSQL.
     """
     # We will query by 'title' which is currently not indexed (only ID and Code are usually indexed by default or unique constraints)
     # Actually, let's check if we want to add an index dynamically or just show the difference
@@ -224,24 +286,28 @@ def indexing_benchmark(request):
     }
 
     # Scenario 1: No Index (Seq Scan) on Description
-    # We'll search for a substring in description
+    # We'll search for a substring in description.
+    # Since there is no index on the 'description' column, Postgres must check every single row.
     query = "SELECT * FROM courses_course WHERE description LIKE %s"
     param = f"%{search_term}%"
     
     with connection.cursor() as cursor:
+        # EXPLAIN ANALYZE runs the query and returns performance statistics.
         cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query, [param])
         explain_output = cursor.fetchone()[0][0]
         
         results['scenarios'].append({
             'name': 'No Index (Sequential Scan)',
             'query': f"SELECT * FROM courses_course WHERE description LIKE '%{search_term}%'",
+            # Rounding to 3 decimal places for readability
             'execution_time': round(explain_output['Execution Time'], 3),
             'plan': explain_output['Plan']['Node Type'],
             'details': explain_output
         })
 
     # Scenario 2: B-Tree Index on Code (Indexed by unique constraint)
-    # We'll search for a specific code
+    # We'll search for a specific code.
+    # The 'code' column has a UNIQUE constraint, which automatically creates a B-Tree index.
     target_code = "CS050000"
     query_index = "SELECT * FROM courses_course WHERE code = %s"
     

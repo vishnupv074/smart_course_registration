@@ -32,10 +32,28 @@ We simulate this using a Django View (`Transaction A`) and a Celery Task (`Trans
     -   Reads the Section capacity again.
     -   **Result**: Sees **Value: 100**. The value changed within the same transaction!
 
-2.  **Transaction B** (Celery Task):
-    -   Wait 1 second (to ensure A has started).
     -   Updates the Section capacity to **100**.
     -   Commits.
+
+### Technical Implementation
+The simulation uses `transaction.atomic()` to manage the transaction scope and `time.sleep()` to orchestrate the race condition.
+
+**Code Snippet (`adbms_demo/views.py`):**
+```python
+with transaction.atomic():
+    # Step 1: First Read
+    s1 = Section.objects.get(id=section.id)
+    
+    # Step 2: Trigger Transaction B (Background Task)
+    update_section_capacity.delay(section.id, new_capacity=100, delay=1)
+    
+    # Sleep to allow Transaction B to complete
+    time.sleep(3)
+
+    # Step 3: Second Read
+    # In READ COMMITTED, this sees the new value (100)
+    s2 = Section.objects.get(id=section.id)
+```
 
 ### Mitigation in Application
 In the actual **Enrollment System** (`enrollment/views.py`), we mitigate this and other concurrency issues using **Pessimistic Locking**.
@@ -66,9 +84,27 @@ A **Phantom Read** occurs when a transaction executes a query returning a set of
 ### Demo in Application
 -   **URL**: `http://localhost:8000/adbms/phantom-read/`
 -   **Technical Details**:
-    -   Transaction A counts enrollments, sleeps, then counts again.
     -   Transaction B (Celery) inserts a new enrollment for a "phantom_user" during the sleep.
     -   Result: The second count is higher than the first, demonstrating the phantom read.
+
+### Technical Implementation
+Similar to Non-Repeatable Read, this uses a background task to insert data while the main transaction is active.
+
+**Code Snippet (`adbms_demo/views.py`):**
+```python
+with transaction.atomic():
+    # Step 1: First Count
+    count1 = Enrollment.objects.filter(section=section).count()
+
+    # Step 2: Trigger Transaction B
+    insert_enrollment.delay(section.id, delay=1)
+
+    # Sleep to allow Transaction B to complete
+    time.sleep(3)
+
+    # Step 3: Second Count
+    count2 = Enrollment.objects.filter(section=section).count()
+```
 
 ---
 
@@ -91,6 +127,24 @@ A **Deadlock** occurs when two transactions are waiting for each other to give u
     -   PostgreSQL's deadlock detector identifies the cycle and terminates one of the transactions (usually the one that detected the deadlock).
     -   Check Celery logs (`docker-compose logs -f celery`) to see the `DeadlockDetected` error.
 
+### Technical Implementation
+We define two Celery tasks that attempt to acquire `select_for_update()` locks in opposing orders.
+
+**Code Snippet (`adbms_demo/tasks.py`):**
+```python
+# Task A
+with transaction.atomic():
+    Section.objects.select_for_update().get(id=section_id_1)
+    time.sleep(2)
+    Section.objects.select_for_update().get(id=section_id_2)
+
+# Task B
+with transaction.atomic():
+    Section.objects.select_for_update().get(id=section_id_2)
+    time.sleep(2)
+    Section.objects.select_for_update().get(id=section_id_1)
+```
+
 ### Mitigation
 -   **Ordering Updates**: Always acquire locks in a consistent order (e.g., sort by ID).
 -   **Timeouts**: Set `lock_timeout` to fail fast.
@@ -104,7 +158,11 @@ Indexes are data structures that improve the speed of data retrieval operations 
 
 ### Demo in Application
 -   **URL**: `http://localhost:8000/adbms/indexing/`
--   **Setup**: We seeded the database with 100,000 course records.
+-   **URL**: `http://localhost:8000/adbms/indexing/`
+-   **Setup**: We seeded the database with 100,000 course records using the custom management command:
+    ```bash
+    docker-compose exec web python manage.py seed_data --courses 100000
+    ```
 -   **Benchmark**: We compare two queries using `EXPLAIN ANALYZE`.
 
 ### Scenarios
@@ -118,6 +176,23 @@ Indexes are data structures that improve the speed of data retrieval operations 
 -   **Query**: `SELECT * FROM courses_course WHERE code = 'CS050000'`
 -   **Mechanism**: The database uses the B-Tree index on the `code` column (created by the `unique=True` constraint) to jump directly to the target row.
 -   **Performance**: Extremely fast (e.g., < 0.1ms). O(log N) complexity.
+
+### Technical Implementation
+The application uses PostgreSQL's `EXPLAIN (ANALYZE, FORMAT JSON)` command to execute these queries and capture the actual execution time and plan node type.
+
+**Code Snippet (`adbms_demo/views.py`):**
+```python
+with connection.cursor() as cursor:
+    # Execute EXPLAIN ANALYZE to get performance metrics
+    cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query, [param])
+    explain_output = cursor.fetchone()[0][0]
+    
+    # Extract key metrics
+    execution_time = explain_output['Execution Time']
+    plan_node = explain_output['Plan']['Node Type']
+```
+
+The results are then parsed and displayed on the dashboard, showing the stark contrast between `Seq Scan` (scanning all 100k rows) and `Index Scan` (using the B-Tree structure).
 
 ### Conclusion
 Indexing provides massive performance gains for lookup queries on large datasets. However, indexes should be chosen carefully as they slow down `INSERT`, `UPDATE`, and `DELETE` operations.

@@ -14,6 +14,10 @@ def insert_enrollment(section_id, delay=2):
     """
     Inserts a new enrollment for a section after a delay.
     Used to simulate Phantom Read.
+    
+    Args:
+        section_id (int): The ID of the section to enroll in.
+        delay (int): Seconds to wait before inserting (to allow Transaction A to start).
     """
     time.sleep(delay)
     try:
@@ -35,6 +39,14 @@ def deadlock_task_a(section_id_1, section_id_2):
     """
     Simulates Transaction A for Deadlock.
     Locks Section 1, sleeps, then tries to lock Section 2.
+    
+    Logic:
+    1. Start Transaction.
+    2. Acquire Lock on S1 (select_for_update).
+    3. Sleep (Wait for Task B to lock S2).
+    4. Try to Acquire Lock on S2.
+       - If Task B holds S2, this waits.
+       - If Task B also tries to lock S1 (which we hold), a Deadlock occurs.
     """
     try:
         with transaction.atomic():
@@ -52,6 +64,14 @@ def deadlock_task_b(section_id_1, section_id_2):
     """
     Simulates Transaction B for Deadlock.
     Locks Section 2, sleeps, then tries to lock Section 1.
+    
+    Logic:
+    1. Start Transaction.
+    2. Acquire Lock on S2 (select_for_update).
+    3. Sleep (Wait for Task A to lock S1).
+    4. Try to Acquire Lock on S1.
+       - If Task A holds S1, this waits.
+       - If Task A also tries to lock S2 (which we hold), a Deadlock occurs.
     """
     try:
         with transaction.atomic():
@@ -68,7 +88,12 @@ def deadlock_task_b(section_id_1, section_id_2):
 def update_section_capacity(section_id, new_capacity, delay=2):
     """
     Updates a section's capacity after a delay.
-    Used to simulate concurrent updates for isolation level demos.
+    Used to simulate concurrent updates for isolation level demos (Non-Repeatable Read).
+    
+    Args:
+        section_id (int): ID of the section to update.
+        new_capacity (int): The new capacity value.
+        delay (int): Seconds to wait before updating.
     """
     time.sleep(delay)
     try:
