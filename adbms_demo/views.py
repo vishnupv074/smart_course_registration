@@ -202,6 +202,62 @@ def deadlock_simulation(request):
     results['anomaly_detected'] = True
     results['conclusion'] = "Deadlock Scenario Triggered! One of the tasks will be terminated by PostgreSQL's deadlock detector. Check the Celery logs to see which one failed."
 
+    results['conclusion'] = "Deadlock Scenario Triggered! One of the tasks will be terminated by PostgreSQL's deadlock detector. Check the Celery logs to see which one failed."
+
     return render(request, 'adbms/simulation_result.html', {'results': results})
+
+
+def indexing_benchmark(request):
+    """
+    Benchmarks query performance with and without indexes.
+    Uses EXPLAIN ANALYZE to get execution time.
+    """
+    # We will query by 'title' which is currently not indexed (only ID and Code are usually indexed by default or unique constraints)
+    # Actually, let's check if we want to add an index dynamically or just show the difference
+    # For this demo, we'll assume 'description' is NOT indexed.
+    
+    search_term = "Description"
+    
+    results = {
+        'demo_name': 'Indexing Benchmark',
+        'scenarios': []
+    }
+
+    # Scenario 1: No Index (Seq Scan) on Description
+    # We'll search for a substring in description
+    query = "SELECT * FROM courses_course WHERE description LIKE %s"
+    param = f"%{search_term}%"
+    
+    with connection.cursor() as cursor:
+        cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query, [param])
+        explain_output = cursor.fetchone()[0][0]
+        
+        results['scenarios'].append({
+            'name': 'No Index (Sequential Scan)',
+            'query': f"SELECT * FROM courses_course WHERE description LIKE '%{search_term}%'",
+            'execution_time': round(explain_output['Execution Time'], 3),
+            'plan': explain_output['Plan']['Node Type'],
+            'details': explain_output
+        })
+
+    # Scenario 2: B-Tree Index on Code (Indexed by unique constraint)
+    # We'll search for a specific code
+    target_code = "CS050000"
+    query_index = "SELECT * FROM courses_course WHERE code = %s"
+    
+    with connection.cursor() as cursor:
+        cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query_index, [target_code])
+        explain_output = cursor.fetchone()[0][0]
+        
+        results['scenarios'].append({
+            'name': 'B-Tree Index (Index Scan)',
+            'query': f"SELECT * FROM courses_course WHERE code = '{target_code}'",
+            'execution_time': round(explain_output['Execution Time'], 3),
+            'plan': explain_output['Plan']['Node Type'],
+            'details': explain_output
+        })
+
+    return render(request, 'adbms/indexing_result.html', {'results': results})
+
 
 

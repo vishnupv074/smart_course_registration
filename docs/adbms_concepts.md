@@ -63,9 +63,16 @@ A **Phantom Read** occurs when a transaction executes a query returning a set of
 -   **Transaction B**: `INSERT INTO enrollments ...` (for section 1).
 -   **Transaction A**: `SELECT count(*) ...` -> Returns a different count.
 
+### Demo in Application
+-   **URL**: `http://localhost:8000/adbms/phantom-read/`
+-   **Technical Details**:
+    -   Transaction A counts enrollments, sleeps, then counts again.
+    -   Transaction B (Celery) inserts a new enrollment for a "phantom_user" during the sleep.
+    -   Result: The second count is higher than the first, demonstrating the phantom read.
+
 ---
 
-## 3. Deadlock (Planned)
+## 3. Deadlock
 
 ### Concept
 A **Deadlock** occurs when two transactions are waiting for each other to give up locks.
@@ -75,6 +82,43 @@ A **Deadlock** occurs when two transactions are waiting for each other to give u
 -   **Transaction B**: Locks Row 2. Sleeps. Tries to Lock Row 1.
 -   **Result**: Database detects deadlock and aborts one transaction.
 
+### Demo in Application
+-   **URL**: `http://localhost:8000/adbms/deadlock/`
+-   **Technical Details**:
+    -   Two Celery tasks are triggered simultaneously.
+    -   Task A locks Section 1, waits, then tries to lock Section 2.
+    -   Task B locks Section 2, waits, then tries to lock Section 1.
+    -   PostgreSQL's deadlock detector identifies the cycle and terminates one of the transactions (usually the one that detected the deadlock).
+    -   Check Celery logs (`docker-compose logs -f celery`) to see the `DeadlockDetected` error.
+
 ### Mitigation
 -   **Ordering Updates**: Always acquire locks in a consistent order (e.g., sort by ID).
 -   **Timeouts**: Set `lock_timeout` to fail fast.
+
+---
+
+## 4. Indexing & Performance
+
+### Concept
+Indexes are data structures that improve the speed of data retrieval operations on a database table at the cost of additional writes and storage space.
+
+### Demo in Application
+-   **URL**: `http://localhost:8000/adbms/indexing/`
+-   **Setup**: We seeded the database with 100,000 course records.
+-   **Benchmark**: We compare two queries using `EXPLAIN ANALYZE`.
+
+### Scenarios
+
+#### 1. No Index (Sequential Scan)
+-   **Query**: `SELECT * FROM courses_course WHERE description LIKE '%Description%'`
+-   **Mechanism**: The database must scan every single row in the table (Sequential Scan) to find matches because there is no index on the `description` column.
+-   **Performance**: Slow (e.g., ~15-30ms+ depending on hardware). O(N) complexity.
+
+#### 2. B-Tree Index (Index Scan)
+-   **Query**: `SELECT * FROM courses_course WHERE code = 'CS050000'`
+-   **Mechanism**: The database uses the B-Tree index on the `code` column (created by the `unique=True` constraint) to jump directly to the target row.
+-   **Performance**: Extremely fast (e.g., < 0.1ms). O(log N) complexity.
+
+### Conclusion
+Indexing provides massive performance gains for lookup queries on large datasets. However, indexes should be chosen carefully as they slow down `INSERT`, `UPDATE`, and `DELETE` operations.
+
