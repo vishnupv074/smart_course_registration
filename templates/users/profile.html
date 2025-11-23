@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Smart Course Registration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-circle me-2"></i>User Profile</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted">
+                        <strong>Username:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ user.username }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted">
+                        <strong>Email:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ user.email }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted">
+                        <strong>Role:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <span class="badge bg-info">{{ user.get_role_display }}</span>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted">
+                        <strong>Phone Number:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ user.profile.phone_number|default:"Not provided" }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4 text-muted">
+                        <strong>Bio:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ user.profile.bio|default:"No bio added yet" }}
+                    </div>
+                </div>
+                <hr>
+                <div class="text-end">
+                    <a href="{% url 'edit-profile' %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

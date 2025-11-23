@@ -104,6 +104,7 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 ## 6. Recent Changes (Session Context)
 *   **Partitioning:** Added `PartitionedEnrollment` model and custom SQL migration to create partitions. Implemented `partitioning_demo` view to benchmark pruning.
 *   **Row Locking:** Implemented `row_locking_demo` to visualize `SELECT FOR UPDATE` blocking behavior.
+*   **User Profile:** Implemented full User Profile feature with Profile model, forms, views, and templates. Created management command to add profiles for existing users.
 *   **Documentation:** Updated `README.md`, `walkthrough.md`, and `adbms_concepts.md`.
 *   **Verification:** Verified Partitioning Demo with performance benchmarks (1.78ms vs 0.75ms).
 
@@ -111,7 +112,7 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 
 ### Immediate Tasks
 *   **[DONE] Verify Partitioning Demo:** Verified that the demo works as expected and shows performance gains (Partition Pruning).
-*   **User Profile:** Implement the User Profile page (currently a placeholder).
+*   **[DONE] User Profile:** Implemented User Profile page with view/edit functionality. Created profiles for all existing users.
 
 ### Enhanced Course Registration Features
 *   **Admin Dashboard:** Implement a comprehensive dashboard with:

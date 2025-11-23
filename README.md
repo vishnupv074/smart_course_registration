@@ -6,6 +6,7 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
 
 ### Core Functionality
 -   **User Management**: Role-based access for Students, Instructors, and Admins.
+-   **User Profiles**: View and edit user profile information including bio and phone number.
 -   **Course Catalog**: Searchable and paginated list of courses and sections.
 -   **Instructor Dashboard**: Manage courses, sections, and view enrolled students.
 -   **Student Dashboard**: View enrollments, browse courses, and drop courses.
