@@ -1,52 +1,122 @@
 {% extends 'base.html' %}
 
-{% block title %}Partitioning Benchmark - SmartReg{% endblock %}
+{% block title %}Partitioning Performance - SmartReg{% endblock %}
 
 {% block content %}
+<style>
+    .partition-card {
+        transition: all var(--transition-fast);
+        height: 100%;
+    }
+
+    .partition-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 800;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .partition-visual {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .partition-block {
+        flex: 1;
+        height: 40px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: white;
+    }
+</style>
+
 <div class="row justify-content-center">
     <div class="col-md-10">
-        <h2 class="mb-4">Partitioning Benchmark Results</h2>
-        <p class="lead">Comparing query performance between a standard table and a partitioned table.</p>
+        <div class="card mb-4">
+            <div class="card-header" style="background: var(--primary-gradient); color: white; border: none;">
+                <h4 class="mb-0" style="color: white; font-weight: 700;">
+                    <i class="fas fa-layer-group"></i> Partitioning Performance Comparison
+                </h4>
+            </div>
+        </div>
 
-        <div class="row">
-            {% for scenario in results.scenarios %}
-            <div class="col-md-6">
-                <div class="card mb-4 h-100">
-                    <div
-                        class="card-header {% if 'Partitioned' in scenario.name and 'Non' not in scenario.name %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">
-                        <h5 class="mb-0">{{ scenario.name }}</h5>
-                    </div>
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card partition-card" style="border-left: 4px solid var(--warning);">
                     <div class="card-body">
-                        <p><strong>Query:</strong> <code>{{ scenario.query }}</code></p>
-                        <h3 class="text-center my-4">
-                            {{ scenario.execution_time }} ms
-                        </h3>
-                        <p><strong>Plan Node:</strong> {{ scenario.plan }}</p>
-
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#details{{ forloop.counter }}">
-                            View Full Plan
-                        </button>
-                        <div class="collapse mt-2" id="details{{ forloop.counter }}">
-                            <pre class="bg-light p-2 small"><code>{{ scenario.details|pprint }}</code></pre>
+                        <h5 class="mb-3">
+                            <i class="fas fa-database text-warning"></i> Without Partitioning
+                        </h5>
+                        <div class="mb-3">
+                            <strong><i class="fas fa-clock"></i> Execution Time:</strong><br>
+                            <span class="metric-value">{{ without_partition_time }}ms</span>
                         </div>
+                        <div class="partition-visual">
+                            <div class="partition-block"
+                                style="background: linear-gradient(135deg, var(--warning) 0%, var(--warning-light) 100%);">
+                                All Data
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-search"></i> Scans entire table
+                        </small>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+
+            <div class="col-md-6 mb-3">
+                <div class="card partition-card" style="border-left: 4px solid var(--success);">
+                    <div class="card-body">
+                        <h5 class="mb-3">
+                            <i class="fas fa-check-circle text-success"></i> With Partitioning
+                        </h5>
+                        <div class="mb-3">
+                            <strong><i class="fas fa-clock"></i> Execution Time:</strong><br>
+                            <span class="metric-value">{{ with_partition_time }}ms</span>
+                        </div>
+                        <div class="partition-visual">
+                            <div class="partition-block" style="background: var(--gray-300); opacity: 0.3;">Skip</div>
+                            <div class="partition-block" style="background: var(--success-gradient);">Target</div>
+                            <div class="partition-block" style="background: var(--gray-300); opacity: 0.3;">Skip</div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-bolt"></i> Partition pruning optimization
+                        </small>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="alert alert-info mt-4">
-            <h5><i class="fas fa-info-circle"></i> Observation</h5>
-            <p>
-                The <strong>Partitioned Table</strong> should ideally show a faster execution time or a cleaner plan
-                (scanning only one partition) compared to the <strong>Non-Partitioned Table</strong> (scanning the
-                entire table), especially as data volume grows.
-            </p>
+        <div class="card"
+            style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(110, 231, 183, 0.1) 100%); border-left: 4px solid var(--success);">
+            <div class="card-body text-center py-5">
+                <h5 class="mb-3"><i class="fas fa-chart-line"></i> Performance Improvement</h5>
+                <div class="improvement-badge">
+                    <i class="fas fa-rocket"></i> {{ improvement_percentage }}% Faster
+                </div>
+                <p class="text-muted mt-3 mb-0">
+                    Partitioning by <code>semester</code> enables partition pruning, scanning only relevant partitions
+                    instead of the entire table.
+                </p>
+            </div>
         </div>
 
         <div class="text-center mt-4">
-            <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+            <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary hover-lift">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
 </div>

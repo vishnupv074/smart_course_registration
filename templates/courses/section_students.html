@@ -3,37 +3,124 @@
 {% block title %}Students - {{ section.course.code }} - SmartReg{% endblock %}
 
 {% block content %}
-<div class="row">
+<style>
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .breadcrumb-item a {
+        color: var(--primary-start);
+        text-decoration: none;
+        transition: color var(--transition-fast);
+    }
+
+    .breadcrumb-item a:hover {
+        color: var(--primary-end);
+    }
+
+    .enrollment-status-card {
+        background: var(--primary-gradient);
+        color: white;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .enrollment-progress {
+        background: rgba(255, 255, 255, 0.2);
+        height: 12px;
+        border-radius: var(--radius-full);
+        overflow: hidden;
+        margin-top: 0.75rem;
+    }
+
+    .enrollment-progress-fill {
+        height: 100%;
+        background: white;
+        border-radius: var(--radius-full);
+        transition: width 0.6s ease;
+    }
+
+    .student-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-right: 0.75rem;
+    }
+
+    .student-row {
+        transition: all var(--transition-fast);
+    }
+
+    .student-row:hover {
+        background: var(--bg-tertiary);
+        transform: scale(1.01);
+    }
+</style>
+
+<div class="row animate-fade-in-up">
     <div class="col-md-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'instructor-dashboard' %}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Section Students</li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'instructor-dashboard' %}">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    <i class="fas fa-users"></i> Section Students
+                </li>
             </ol>
         </nav>
 
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
+            <div class="card-header" style="background: var(--primary-gradient); color: white; border: none;">
+                <h5 class="mb-2" style="color: white; font-weight: 700;">
                     <i class="fas fa-users"></i> Enrolled Students
                 </h5>
-                <small class="text-muted">
-                    {{ section.course.code }} - {{ section.course.title }} | {{ section.semester }} | {{
-                    section.schedule }}
+                <small style="color: rgba(255, 255, 255, 0.9);">
+                    <i class="fas fa-book"></i> {{ section.course.code }} - {{ section.course.title }} |
+                    <i class="fas fa-calendar"></i> {{ section.semester }} |
+                    <i class="fas fa-clock"></i> {{ section.schedule }}
                 </small>
             </div>
             <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="alert alert-info">
-                            <strong>Enrollment Status:</strong> {{ enrolled_count }} / {{ section.capacity }} students
+                <!-- Enrollment Status -->
+                <div class="enrollment-status-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 style="color: white; margin: 0; font-weight: 600;">
+                                <i class="fas fa-chart-line"></i> Enrollment Status
+                            </h6>
+                            <h3 style="color: white; margin-top: 0.5rem; font-weight: 800;">
+                                {{ enrolled_count }} / {{ section.capacity }}
+                            </h3>
+                        </div>
+                        <div>
                             {% if enrolled_count >= section.capacity %}
-                            <span class="badge bg-danger ms-2">FULL</span>
+                            <span class="badge bg-danger" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                <i class="fas fa-ban"></i> FULL
+                            </span>
                             {% else %}
-                            <span class="badge bg-success ms-2">{{ section.capacity|add:"-enrolled_count" }} spots
-                                available</span>
+                            <span class="badge bg-success" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                <i class="fas fa-check-circle"></i> {{ section.capacity|add:"-enrolled_count" }} Spots
+                                Available
+                            </span>
                             {% endif %}
                         </div>
+                    </div>
+                    <div class="enrollment-progress">
+                        {% widthratio enrolled_count section.capacity 100 as percent %}
+                        <div class="enrollment-progress-fill"
+                            style="width: {% if percent > 100 %}100{% else %}{{ percent }}{% endif %}%"></div>
                     </div>
                 </div>
 
@@ -43,7 +130,7 @@
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Student Name</th>
+                                <th>Student</th>
                                 <th>Username</th>
                                 <th>Email</th>
                                 <th>Enrolled Date</th>
@@ -51,31 +138,58 @@
                         </thead>
                         <tbody>
                             {% for enrollment in enrollments %}
-                            <tr>
+                            <tr class="student-row">
                                 <td>{{ forloop.counter }}</td>
                                 <td>
-                                    {% if enrollment.student.first_name %}
-                                    {{ enrollment.student.first_name }} {{ enrollment.student.last_name }}
-                                    {% else %}
-                                    <em class="text-muted">Name not set</em>
-                                    {% endif %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="student-avatar">
+                                            {% if enrollment.student.first_name %}
+                                            {{ enrollment.student.first_name|slice:":1"|upper }}
+                                            {% else %}
+                                            <i class="fas fa-user"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            {% if enrollment.student.first_name %}
+                                            <strong>{{ enrollment.student.first_name }} {{ enrollment.student.last_name
+                                                }}</strong>
+                                            {% else %}
+                                            <em class="text-muted">Name not set</em>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </td>
-                                <td>{{ enrollment.student.username }}</td>
-                                <td>{{ enrollment.student.email|default:"N/A" }}</td>
-                                <td>{{ enrollment.enrolled_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-user-circle"></i> {{ enrollment.student.username }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <i class="fas fa-envelope text-muted"></i> {{ enrollment.student.email|default:"N/A"
+                                    }}
+                                </td>
+                                <td>
+                                    <i class="fas fa-calendar-check text-muted"></i>
+                                    {{ enrollment.enrolled_at|date:"M d, Y H:i" }}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <div class="alert alert-warning text-center my-4">
-                    <i class="fas fa-exclamation-triangle"></i> No students enrolled in this section yet.
+                <div class="text-center py-5">
+                    <div style="font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem;">
+                        <i class="fas fa-user-slash"></i>
+                    </div>
+                    <h5 class="text-muted">No students enrolled yet</h5>
+                    <p class="text-muted">Students will appear here once they enroll in this section.</p>
                 </div>
                 {% endif %}
             </div>
-            <div class="card-footer">
-                <a href="{% url 'instructor-dashboard' %}" class="btn btn-secondary">
+            <div class="card-footer"
+                style="background: var(--bg-secondary); border-top: 1px solid var(--border-color);">
+                <a href="{% url 'instructor-dashboard' %}" class="btn btn-secondary hover-lift">
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
                 </a>
             </div>

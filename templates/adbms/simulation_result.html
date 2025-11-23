@@ -3,65 +3,143 @@
 {% block title %}{{ results.demo_name }} - SmartReg{% endblock %}
 
 {% block content %}
+<style>
+    .demo-result-card {
+        animation: fadeInUp 0.6s ease;
+    }
+
+    .config-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border-left: 4px solid var(--primary-start);
+    }
+
+    .concept-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+        border-left: 4px solid var(--info);
+    }
+
+    .execution-table {
+        font-family: var(--font-mono);
+        font-size: 0.875rem;
+    }
+
+    .execution-table th {
+        background: var(--bg-tertiary);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+
+    .execution-table tbody tr {
+        transition: all var(--transition-fast);
+    }
+
+    .execution-table tbody tr:hover {
+        background: var(--bg-tertiary);
+        transform: scale(1.01);
+    }
+
+    .conclusion-card {
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.02);
+        }
+    }
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <h2 class="mb-4">{{ results.demo_name }} Demo</h2>
+    <div class="col-md-10">
+        <div class="demo-result-card">
+            <div class="card mb-3">
+                <div class="card-header" style="background: var(--primary-gradient); color: white; border: none;">
+                    <h4 class="mb-0" style="color: white; font-weight: 700;">
+                        <i class="fas fa-flask"></i> {{ results.demo_name }} Demo
+                    </h4>
+                </div>
+            </div>
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <strong>Configuration</strong>
+            <div class="card config-card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-cog text-primary"></i> Configuration</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong><i class="fas fa-layer-group"></i> Isolation Level:</strong><br>
+                            <span class="badge badge-gradient mt-1">{{ results.isolation_level }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong><i class="fas fa-hashtag"></i> Target Section ID:</strong><br>
+                            <code class="mt-1">{{ results.section_id }}</code>
+                        </div>
+                        <div class="col-md-4">
+                            <strong><i class="fas fa-database"></i> Initial Value:</strong><br>
+                            <code class="mt-1">{{ results.initial_value }}</code>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p><strong>Isolation Level:</strong> {{ results.isolation_level }}</p>
-                <p><strong>Target Section ID:</strong> {{ results.section_id }}</p>
-                <p><strong>Initial Value:</strong> {{ results.initial_value }}</p>
-            </div>
-        </div>
 
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <strong>Concept Explained</strong>
+            <div class="card concept-card mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-lightbulb text-info"></i> Concept Explained</h5>
+                    <p class="mb-0">{{ results.description }}</p>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="mb-0">{{ results.description }}</p>
-            </div>
-        </div>
 
-        <div class="card mb-4">
-            <div class="card-header bg-light">
-                <strong>Execution Log</strong>
+            <div class="card mb-4">
+                <div class="card-header" style="background: var(--bg-tertiary); font-weight: 700;">
+                    <i class="fas fa-list-alt"></i> Execution Log
+                </div>
+                <div class="table-responsive">
+                    <table class="table execution-table mb-0">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-clock"></i> Time</th>
+                                <th><i class="fas fa-shoe-prints"></i> Step</th>
+                                <th><i class="fas fa-play"></i> Action</th>
+                                <th><i class="fas fa-database"></i> Value Read/Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in results.steps %}
+                            <tr>
+                                <td>{{ step.time }}</td>
+                                <td><span class="badge bg-secondary">{{ step.step }}</span></td>
+                                <td>{{ step.action }}</td>
+                                <td><strong class="gradient-text">{{ step.value }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="table table-striped mb-0">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Step</th>
-                            <th>Action</th>
-                            <th>Value Read/Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for step in results.steps %}
-                        <tr>
-                            <td>{{ step.time }}</td>
-                            <td>{{ step.step }}</td>
-                            <td>{{ step.action }}</td>
-                            <td><strong>{{ step.value }}</strong></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+            <div class="conclusion-card {% if results.anomaly_detected %}alert-warning{% else %}alert-success{% endif %}"
+                style="background: {% if results.anomaly_detected %}linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%); border-left: 4px solid var(--warning);{% else %}linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(110, 231, 183, 0.1) 100%); border-left: 4px solid var(--success);{% endif %}">
+                <h4 class="alert-heading">
+                    <i
+                        class="fas fa-{% if results.anomaly_detected %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                    Conclusion
+                </h4>
+                <p class="mb-0">{{ results.conclusion }}</p>
             </div>
-        </div>
 
-        <div class="alert {% if results.anomaly_detected %}alert-warning{% else %}alert-success{% endif %}">
-            <h4 class="alert-heading">Conclusion</h4>
-            <p>{{ results.conclusion }}</p>
-        </div>
-
-        <div class="text-center">
-            <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+            <div class="text-center mt-4">
+                <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary hover-lift">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
         </div>
     </div>
 </div>

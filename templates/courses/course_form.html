@@ -3,14 +3,17 @@
 {% block title %}{{ action }} Course - SmartReg{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center animate-fade-in-up">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">{{ action }} Course</h5>
+            <div class="card-header" style="background: var(--primary-gradient); color: white; border: none;">
+                <h5 class="mb-0" style="color: white; font-weight: 700;">
+                    <i class="fas fa-{% if action == 'Create' %}plus-circle{% else %}edit{% endif %}"></i>
+                    {{ action }} Course
+                </h5>
             </div>
-            <div class="card-body">
-                <form method="post">
+            <div class="card-body p-4">
+                <form method="post" id="courseForm">
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
@@ -19,47 +22,80 @@
                     </div>
                     {% endif %}
 
-                    <div class="mb-3">
-                        <label for="{{ form.code.id_for_label }}" class="form-label">Course Code *</label>
+                    <div class="mb-4">
+                        <label for="{{ form.code.id_for_label }}" class="form-label">
+                            <i class="fas fa-code text-primary"></i> Course Code *
+                        </label>
                         {{ form.code }}
                         {% if form.code.errors %}
-                        <div class="text-danger">{{ form.code.errors }}</div>
+                        <div class="text-danger mt-1">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.code.errors }}
+                        </div>
                         {% endif %}
-                        <small class="form-text text-muted">Unique identifier for the course (e.g., CS101)</small>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Unique identifier for the course (e.g., CS101)
+                        </small>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="{{ form.title.id_for_label }}" class="form-label">Course Title *</label>
+                    <div class="mb-4">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                            <i class="fas fa-heading text-primary"></i> Course Title *
+                        </label>
                         {{ form.title }}
                         {% if form.title.errors %}
-                        <div class="text-danger">{{ form.title.errors }}</div>
+                        <div class="text-danger mt-1">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.title.errors }}
+                        </div>
                         {% endif %}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">Description *</label>
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="fas fa-align-left text-primary"></i> Description *
+                        </label>
                         {{ form.description }}
                         {% if form.description.errors %}
-                        <div class="text-danger">{{ form.description.errors }}</div>
+                        <div class="text-danger mt-1">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.description.errors }}
+                        </div>
                         {% endif %}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="{{ form.credits.id_for_label }}" class="form-label">Credits *</label>
+                    <div class="mb-4">
+                        <label for="{{ form.credits.id_for_label }}" class="form-label">
+                            <i class="fas fa-star text-primary"></i> Credits *
+                        </label>
                         {{ form.credits }}
                         {% if form.credits.errors %}
-                        <div class="text-danger">{{ form.credits.errors }}</div>
+                        <div class="text-danger mt-1">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.credits.errors }}
+                        </div>
                         {% endif %}
-                        <small class="form-text text-muted">Number of credits (1-6)</small>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Number of credits (1-6)
+                        </small>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{% url 'instructor-dashboard' %}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">{{ action }} Course</button>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'instructor-dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i> {{ action }} Course
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Add loading state to submit button
+    document.getElementById('courseForm').addEventListener('submit', function () {
+        const btn = document.getElementById('submitBtn');
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+    });
+</script>
 {% endblock %}
