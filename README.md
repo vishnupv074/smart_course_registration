@@ -15,6 +15,12 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
 -   **Course Catalog**: Searchable and paginated list of courses and sections.
 -   **Instructor Dashboard**: Manage courses, sections, and view enrolled students.
 -   **Student Dashboard**: View enrollments, browse courses, and drop courses.
+-   **Admin Dashboard**: Comprehensive analytics and monitoring with:
+    -   Real-time statistics (students, instructors, courses, daily registrations)
+    -   Enrollment trends visualization (last 30 days)
+    -   Popular courses analysis (top 10)
+    -   Seat utilization tracking
+    -   System health monitoring (database & task queue)
 -   **Enrollment System**:
     -   **ACID Compliance**: Atomic enrollment transactions with capacity checks.
     -   **Conflict Detection**: Prevents scheduling conflicts.

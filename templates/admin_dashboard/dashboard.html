@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - SmartReg{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-left: 4px solid;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card.students {
+        border-left-color: #0d6efd;
+    }
+
+    .stat-card.instructors {
+        border-left-color: #198754;
+    }
+
+    .stat-card.courses {
+        border-left-color: #ffc107;
+    }
+
+    .stat-card.registrations {
+        border-left-color: #dc3545;
+    }
+
+    .stat-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+    }
+
+    .health-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .health-indicator.healthy {
+        background-color: #198754;
+        box-shadow: 0 0 8px rgba(25, 135, 84, 0.5);
+    }
+
+    .health-indicator.warning {
+        background-color: #ffc107;
+        box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
+    }
+
+    .health-indicator.error {
+        background-color: #dc3545;
+        box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tachometer-alt text-primary me-2"></i>Admin Dashboard</h2>
+    <small class="text-muted">Last updated: {{ system_health.last_enrollment_time|date:"M d, Y H:i" }}</small>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card students">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Students</h6>
+                        <h2 class="mb-0">{{ statistics.total_students }}</h2>
+                    </div>
+                    <i class="fas fa-user-graduate stat-icon text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card instructors">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Instructors</h6>
+                        <h2 class="mb-0">{{ statistics.total_instructors }}</h2>
+                    </div>
+                    <i class="fas fa-chalkboard-teacher stat-icon text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card courses">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Courses</h6>
+                        <h2 class="mb-0">{{ statistics.total_courses }}</h2>
+                        <small class="text-muted">{{ statistics.total_sections }} sections</small>
+                    </div>
+                    <i class="fas fa-book stat-icon text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card registrations">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Today's Registrations</h6>
+                        <h2 class="mb-0">{{ statistics.daily_registrations }}</h2>
+                        <small class="text-muted">Total: {{ statistics.total_enrollments }}</small>
+                    </div>
+                    <i class="fas fa-clipboard-check stat-icon text-danger"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-4">
+    <!-- Enrollment Trends -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Enrollment Trends (Last 30 Days)</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="enrollmentTrendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seat Utilization -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Seat Utilization</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="seatUtilizationChart"></canvas>
+                </div>
+                <div class="text-center mt-3">
+                    <p class="mb-1"><strong>{{ analytics.seat_utilization.utilization_percentage }}%</strong> Utilized
+                    </p>
+                    <small class="text-muted">{{ analytics.seat_utilization.filled_seats }} / {{
+                        analytics.seat_utilization.total_seats }} seats</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Courses -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-star me-2"></i>Most Popular Courses</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="popularCoursesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Health & Recent Activity -->
+<div class="row g-4">
+    <!-- System Health -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>System Health</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Database</h6>
+                    <div class="d-flex align-items-center">
+                        <span
+                            class="health-indicator {% if system_health.database.status %}healthy{% else %}error{% endif %}"></span>
+                        <span>{{ system_health.database.message }}</span>
+                    </div>
+                    {% if system_health.database.response_time %}
+                    <small class="text-muted ms-4">Response time: {{ system_health.database.response_time }}ms</small>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <h6>Task Queue (Celery)</h6>
+                    <div class="d-flex align-items-center">
+                        <span
+                            class="health-indicator {% if system_health.celery.status %}healthy{% else %}error{% endif %}"></span>
+                        <span>{{ system_health.celery.message }}</span>
+                    </div>
+                    {% if system_health.celery.queue_depth is not None %}
+                    <small class="text-muted ms-4">Queue depth: {{ system_health.celery.queue_depth }} tasks</small>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <h6>Last Activity</h6>
+                    {% if system_health.last_enrollment_time %}
+                    <small class="text-muted">{{ system_health.last_enrollment_time|timesince }} ago</small>
+                    {% else %}
+                    <small class="text-muted">No enrollments yet</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Enrollments -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Enrollments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Section</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for enrollment in recent_enrollments %}
+                            <tr>
+                                <td>{{ enrollment.student.username }}</td>
+                                <td>{{ enrollment.section.course.code }}</td>
+                                <td>{{ enrollment.section.semester }}</td>
+                                <td><small class="text-muted">{{ enrollment.enrolled_at|timesince }} ago</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No recent enrollments</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Enrollment Trends Chart
+    const enrollmentTrendsCtx = document.getElementById('enrollmentTrendsChart').getContext('2d');
+    const enrollmentTrendsData = {{ analytics.enrollment_trends| safe }};
+
+    const trendLabels = enrollmentTrendsData.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const trendCounts = enrollmentTrendsData.map(item => item.count);
+
+    new Chart(enrollmentTrendsCtx, {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: 'Enrollments',
+                data: trendCounts,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Seat Utilization Chart
+    const seatUtilizationCtx = document.getElementById('seatUtilizationChart').getContext('2d');
+    const seatData = {{ analytics.seat_utilization| safe }};
+
+    new Chart(seatUtilizationCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Filled', 'Available'],
+            datasets: [{
+                data: [seatData.filled_seats, seatData.total_seats - seatData.filled_seats],
+                backgroundColor: ['#198754', '#e9ecef'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Popular Courses Chart
+    const popularCoursesCtx = document.getElementById('popularCoursesChart').getContext('2d');
+    const popularCoursesData = {{ analytics.popular_courses| safe }};
+
+    const courseLabels = popularCoursesData.map(item => item.course_code);
+    const courseCounts = popularCoursesData.map(item => item.enrollment_count);
+
+    new Chart(popularCoursesCtx, {
+        type: 'bar',
+        data: {
+            labels: courseLabels,
+            datasets: [{
+                label: 'Enrollments',
+                data: courseCounts,
+                backgroundColor: '#198754',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

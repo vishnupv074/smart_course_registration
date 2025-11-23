@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'courses',
     'enrollment',
     'adbms_demo',
+    'admin_dashboard',
 ]
 
 MIDDLEWARE = [
