@@ -105,11 +105,12 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 *   **Partitioning:** Added `PartitionedEnrollment` model and custom SQL migration to create partitions. Implemented `partitioning_demo` view to benchmark pruning.
 *   **Row Locking:** Implemented `row_locking_demo` to visualize `SELECT FOR UPDATE` blocking behavior.
 *   **Documentation:** Updated `README.md`, `walkthrough.md`, and `adbms_concepts.md`.
+*   **Verification:** Verified Partitioning Demo with performance benchmarks (1.78ms vs 0.75ms).
 
 ## 7. Pending / Next Steps
 
 ### Immediate Tasks
-*   **Verify Partitioning Demo:** Ensure the demo works as expected and shows performance gains.
+*   **[DONE] Verify Partitioning Demo:** Verified that the demo works as expected and shows performance gains (Partition Pruning).
 *   **User Profile:** Implement the User Profile page (currently a placeholder).
 
 ### Enhanced Course Registration Features

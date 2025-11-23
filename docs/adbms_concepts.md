@@ -158,7 +158,6 @@ Indexes are data structures that improve the speed of data retrieval operations 
 
 ### Demo in Application
 -   **URL**: `http://localhost:8000/adbms/indexing/`
--   **URL**: `http://localhost:8000/adbms/indexing/`
 -   **Setup**: We seeded the database with 100,000 course records using the custom management command:
     ```bash
     docker-compose exec web python manage.py seed_data --courses 100000
@@ -224,4 +223,54 @@ results = {
     'total_cost': explain_output['Plan']['Total Cost'],
     'plan_node': explain_output['Plan']['Node Type']
 }
+```
+
+---
+
+## 6. Table Partitioning
+
+### Concept
+**Table Partitioning** is a database design technique where a large table is split into smaller, more manageable pieces called partitions. PostgreSQL supports partitioning by Range, List, or Hash.
+
+**Benefit**: **Partition Pruning**. When a query filters by the partition key, the query planner can skip scanning irrelevant partitions entirely, significantly reducing I/O and execution time.
+
+### Demo in Application
+-   **URL**: `http://localhost:8000/adbms/partitioning/`
+-   **Setup**:
+    -   **Non-Partitioned Table**: `adbms_demo_nonpartitionedenrollment` (Standard table).
+    -   **Partitioned Table**: `adbms_demo_partitionedenrollment` (Partitioned by `LIST (semester)`).
+    -   **Data**: Both tables are populated with ~20,000 rows of dummy enrollment data.
+
+### Scenarios
+
+#### 1. Non-Partitioned Query
+-   **Query**: `SELECT * FROM non_partitioned WHERE semester = 'Fall 2024'`
+-   **Plan**: `Seq Scan` on the entire table.
+-   **Result**: Slower execution as it scans all rows (including Spring 2025, Fall 2025, etc.).
+
+#### 2. Partitioned Query
+-   **Query**: `SELECT * FROM partitioned WHERE semester = 'Fall 2024'`
+-   **Plan**: `Seq Scan` on `adbms_demo_partitionedenrollment_fall2024` ONLY.
+-   **Result**: Faster execution due to pruning.
+
+### Technical Implementation
+We used a **Custom SQL Migration** to create the partitioned table since Django's ORM does not natively support creating partitioned tables (though it can query them).
+
+**Migration Snippet:**
+```sql
+CREATE TABLE adbms_demo_partitionedenrollment (
+    id SERIAL,
+    ...
+    semester VARCHAR(20) NOT NULL
+) PARTITION BY LIST (semester);
+
+CREATE TABLE adbms_demo_partitionedenrollment_fall2024 
+    PARTITION OF adbms_demo_partitionedenrollment 
+    FOR VALUES IN ('Fall 2024');
+```
+
+**Code Snippet (`adbms_demo/views.py`):**
+```python
+# We run EXPLAIN ANALYZE on both queries to compare performance
+cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query_part, [target_semester])
 ```

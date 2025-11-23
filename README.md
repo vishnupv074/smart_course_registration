@@ -20,6 +20,7 @@ Interactive tools to visualize advanced database concepts:
 -   **Concurrency & Locking**: Visualize Row Locking and Deadlock scenarios.
 -   **Indexing**: Benchmark performance of B-Tree indexes vs Sequential Scans.
 -   **Query Optimization**: Visualizer for `EXPLAIN ANALYZE` to analyze query costs and execution plans.
+-   **Table Partitioning**: Benchmark performance of Partitioned vs Non-Partitioned tables (Partition Pruning).
 
 ## Quick Start
 
