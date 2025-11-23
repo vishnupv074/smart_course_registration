@@ -4,7 +4,9 @@ import time
 
 from courses.models import Section
 from enrollment.models import Enrollment
-from .tasks import update_section_capacity, insert_enrollment, deadlock_task_a, deadlock_task_b
+from .tasks import update_section_capacity, insert_enrollment, deadlock_task_a, deadlock_task_b, attempt_booking_task
+from .models import NonPartitionedEnrollment, PartitionedEnrollment
+import random
 
 def dashboard(request):
     return render(request, 'adbms/dashboard.html')
@@ -365,3 +367,165 @@ def query_optimization(request):
         'results': results,
         'error': error
     })
+
+
+def partitioning_demo(request):
+    """
+    Demonstrates the performance benefits of Table Partitioning.
+    
+    THEORY:
+    Partitioning splits a large table into smaller, more manageable pieces (partitions).
+    When querying with a filter on the partition key (e.g., semester), the database can
+    "prune" irrelevant partitions, scanning only the necessary child table.
+    
+    SIMULATION STEPS:
+    1. Populate both tables with dummy data (if empty).
+    2. Query Non-Partitioned Table for 'Fall 2024'.
+       - Expect: Sequential Scan on the entire huge table.
+    3. Query Partitioned Table for 'Fall 2024'.
+       - Expect: Sequential Scan ONLY on the 'fall2024' partition.
+    """
+    # 1. Populate Data if needed
+    if NonPartitionedEnrollment.objects.count() < 1000:
+        # Generate dummy data
+        semesters = ['Fall 2024', 'Spring 2025', 'Fall 2025', 'Spring 2026']
+        batch_size = 5000
+        
+        objs_non = []
+        objs_part = []
+        
+        for i in range(batch_size * 4): # 20k rows total
+            sem = random.choice(semesters)
+            name = f"Student {i}"
+            code = f"CS{random.randint(100, 999)}"
+            grade = random.choice(['A', 'B', 'C', 'D', 'F'])
+            
+            objs_non.append(NonPartitionedEnrollment(
+                student_name=name, course_code=code, semester=sem, grade=grade
+            ))
+            objs_part.append(PartitionedEnrollment(
+                student_name=name, course_code=code, semester=sem, grade=grade
+            ))
+            
+        NonPartitionedEnrollment.objects.bulk_create(objs_non)
+        PartitionedEnrollment.objects.bulk_create(objs_part)
+
+    results = {
+        'demo_name': 'Partitioning Benchmark',
+        'scenarios': []
+    }
+    
+    target_semester = 'Fall 2024'
+    
+    # Scenario 1: Non-Partitioned Table
+    query_non = "SELECT * FROM adbms_demo_nonpartitionedenrollment WHERE semester = %s"
+    with connection.cursor() as cursor:
+        cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query_non, [target_semester])
+        explain_output = cursor.fetchone()[0][0]
+        
+        results['scenarios'].append({
+            'name': 'Non-Partitioned Table',
+            'query': f"SELECT * FROM non_partitioned WHERE semester = '{target_semester}'",
+            'execution_time': round(explain_output['Execution Time'], 3),
+            'plan': explain_output['Plan']['Node Type'],
+            'details': explain_output
+        })
+
+    # Scenario 2: Partitioned Table
+    query_part = "SELECT * FROM adbms_demo_partitionedenrollment WHERE semester = %s"
+    with connection.cursor() as cursor:
+        cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query_part, [target_semester])
+        explain_output = cursor.fetchone()[0][0]
+        
+        results['scenarios'].append({
+            'name': 'Partitioned Table (Pruning)',
+            'query': f"SELECT * FROM partitioned WHERE semester = '{target_semester}'",
+            'execution_time': round(explain_output['Execution Time'], 3),
+            'plan': explain_output['Plan']['Node Type'], # Might show Append or Seq Scan on child
+            'details': explain_output
+        })
+
+    return render(request, 'adbms/partitioning_result.html', {'results': results})
+
+
+def row_locking_demo(request):
+    """
+    Demonstrates Row Locking (SELECT FOR UPDATE).
+    
+    THEORY:
+    SELECT FOR UPDATE locks the selected rows, preventing other transactions from modifying
+    or locking them until the current transaction ends. This is crucial for preventing
+    race conditions (e.g., double booking).
+    
+    SIMULATION STEPS:
+    1. Reset Section capacity to 1.
+    2. Transaction A (User) starts, locks the row.
+    3. Transaction B (Background) starts, tries to lock the same row.
+    4. Transaction B blocks/waits.
+    5. Transaction A books the seat and commits.
+    6. Transaction B unblocks, sees 0 capacity, and fails gracefully.
+    """
+    section = Section.objects.first()
+    if not section:
+        return render(request, 'adbms/error.html', {'message': 'No sections available for demo.'})
+
+    # Reset capacity to 1
+    section.capacity = 1
+    section.save()
+
+    results = {
+        'demo_name': 'Row Locking (SELECT FOR UPDATE)',
+        'description': 'Demonstrates how locking a row prevents concurrent modifications. Transaction A locks the row, forcing Transaction B to wait.',
+        'section_id': section.id,
+        'initial_capacity': 1,
+        'steps': []
+    }
+
+    with transaction.atomic():
+        # Step 1: Transaction A starts and locks the row
+        # select_for_update() generates: SELECT ... FOR UPDATE
+        s_locked = Section.objects.select_for_update().get(id=section.id)
+        
+        results['steps'].append({
+            'step': 1,
+            'action': 'Transaction A: Acquire Lock (SELECT FOR UPDATE)',
+            'value': f'Locked Section {s_locked.id}',
+            'time': 'T1'
+        })
+
+        # Step 2: Trigger Transaction B
+        # This task will try to acquire the same lock and will be forced to WAIT.
+        task = attempt_booking_task.delay(section.id, delay=1)
+        
+        results['steps'].append({
+            'step': 2,
+            'action': 'Transaction B: Attempt Booking (Background)',
+            'value': f'Task Queued (ID: {task.id}) - Will Block',
+            'time': 'T2'
+        })
+
+        # Simulate processing time for Transaction A
+        # During this sleep, Transaction B is running but BLOCKED at the database level.
+        time.sleep(4)
+
+        # Step 3: Transaction A completes booking
+        if s_locked.capacity > 0:
+            s_locked.capacity -= 1
+            s_locked.save()
+            status = "Booking Successful"
+        else:
+            status = "Failed (No Seats)"
+            
+        results['steps'].append({
+            'step': 3,
+            'action': 'Transaction A: Book Seat & Commit',
+            'value': f'{status}. Remaining Capacity: {s_locked.capacity}',
+            'time': 'T3'
+        })
+
+    # After the block exits, Transaction A commits.
+    # Transaction B unblocks, reads the new capacity (0), and fails.
+    
+    results['conclusion'] = "Transaction A successfully locked the row. Transaction B was forced to wait until A finished, preventing a race condition (Double Booking)."
+
+    return render(request, 'adbms/simulation_result.html', {'results': results})

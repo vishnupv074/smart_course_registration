@@ -104,3 +104,25 @@ def update_section_capacity(section_id, new_capacity, delay=2):
         return f"Updated section {section_id} capacity from {old_capacity} to {new_capacity}"
     except Section.DoesNotExist:
         return f"Section {section_id} not found"
+
+
+@shared_task
+def attempt_booking_task(section_id, delay=1):
+    """
+    Simulates a concurrent booking attempt (Transaction B).
+    Tries to book a seat in the given section.
+    """
+    time.sleep(delay)
+    try:
+        with transaction.atomic():
+            # Try to acquire lock - will block if Transaction A has it
+            section = Section.objects.select_for_update().get(id=section_id)
+            
+            if section.capacity > 0:
+                section.capacity -= 1
+                section.save()
+                return "Booking Successful (Transaction B)"
+            else:
+                return "Booking Failed: No seats left (Transaction B)"
+    except Exception as e:
+        return f"Booking Failed: {str(e)}"

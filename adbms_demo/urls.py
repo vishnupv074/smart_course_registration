@@ -8,4 +8,6 @@ urlpatterns = [
     path('deadlock/', views.deadlock_simulation, name='deadlock'),
     path('indexing/', views.indexing_benchmark, name='indexing-benchmark'),
     path('query-optimization/', views.query_optimization, name='query-optimization'),
+    path('partitioning/', views.partitioning_demo, name='partitioning-demo'),
+    path('row-locking/', views.row_locking_demo, name='row-locking'),
 ]

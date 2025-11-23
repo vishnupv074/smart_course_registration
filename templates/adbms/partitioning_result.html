@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Partitioning Benchmark - SmartReg{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h2 class="mb-4">Partitioning Benchmark Results</h2>
+        <p class="lead">Comparing query performance between a standard table and a partitioned table.</p>
+
+        <div class="row">
+            {% for scenario in results.scenarios %}
+            <div class="col-md-6">
+                <div class="card mb-4 h-100">
+                    <div
+                        class="card-header {% if 'Partitioned' in scenario.name and 'Non' not in scenario.name %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">
+                        <h5 class="mb-0">{{ scenario.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Query:</strong> <code>{{ scenario.query }}</code></p>
+                        <h3 class="text-center my-4">
+                            {{ scenario.execution_time }} ms
+                        </h3>
+                        <p><strong>Plan Node:</strong> {{ scenario.plan }}</p>
+
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#details{{ forloop.counter }}">
+                            View Full Plan
+                        </button>
+                        <div class="collapse mt-2" id="details{{ forloop.counter }}">
+                            <pre class="bg-light p-2 small"><code>{{ scenario.details|pprint }}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="alert alert-info mt-4">
+            <h5><i class="fas fa-info-circle"></i> Observation</h5>
+            <p>
+                The <strong>Partitioned Table</strong> should ideally show a faster execution time or a cleaner plan
+                (scanning only one partition) compared to the <strong>Non-Partitioned Table</strong> (scanning the
+                entire table), especially as data volume grows.
+            </p>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

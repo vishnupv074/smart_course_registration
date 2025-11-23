@@ -43,7 +43,7 @@
             <div class="card-body">
                 <p>Visualize locking mechanisms and deadlock scenarios.</p>
                 <div class="list-group">
-                    <a href="#" class="list-group-item list-group-item-action disabled">
+                    <a href="{% url 'row-locking' %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
                             <h6 class="mb-1">Row Locking</h6>
                             <small>SELECT FOR UPDATE</small>
@@ -84,6 +84,14 @@
                             <small>Interactive Tool</small>
                         </div>
                         <small class="text-muted">Run custom queries and visualize execution plans.</small>
+                    </a>
+                    <a href="{% url 'partitioning-demo' %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Table Partitioning</h6>
+                            <small>Partition Pruning</small>
+                        </div>
+                        <small class="text-muted">Benchmark query performance on partitioned vs non-partitioned
+                            tables.</small>
                     </a>
                 </div>
             </div>
