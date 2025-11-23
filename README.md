@@ -28,6 +28,14 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
     -   **Waitlist Management**: Automatic FIFO queue when courses are full with auto-enrollment when seats open.
 
 
+### Modern UI/UX
+-   **Design System**: Complete design system with CSS custom properties, modern color palette (purple-to-blue gradients), and dark mode support.
+-   **Dark Mode**: Toggle button with localStorage persistence and smooth theme transitions.
+-   **Toast Notifications**: System-wide notification system with auto-dismiss for success, error, warning, and info messages.
+-   **Animations**: Smooth micro-interactions, hover effects, loading states, and page transitions.
+-   **Responsive Design**: Mobile-first approach optimized for all screen sizes.
+-   **Accessibility**: WCAG AA compliant with semantic HTML, ARIA labels, and keyboard navigation.
+
 ### ADBMS Demonstrations
 Interactive tools to visualize advanced database concepts:
 -   **Isolation Levels**: Simulate anomalies like Non-Repeatable Reads and Phantom Reads.
