@@ -481,51 +481,176 @@ def row_locking_demo(request):
         'steps': []
     }
 
-    with transaction.atomic():
-        # Step 1: Transaction A starts and locks the row
-        # select_for_update() generates: SELECT ... FOR UPDATE
-        s_locked = Section.objects.select_for_update().get(id=section.id)
-        
-        results['steps'].append({
-            'step': 1,
-            'action': 'Transaction A: Acquire Lock (SELECT FOR UPDATE)',
-            'value': f'Locked Section {s_locked.id}',
-            'time': 'T1'
-        })
-
-        # Step 2: Trigger Transaction B
-        # This task will try to acquire the same lock and will be forced to WAIT.
-        task = attempt_booking_task.delay(section.id, delay=1)
-        
-        results['steps'].append({
-            'step': 2,
-            'action': 'Transaction B: Attempt Booking (Background)',
-            'value': f'Task Queued (ID: {task.id}) - Will Block',
-            'time': 'T2'
-        })
-
-        # Simulate processing time for Transaction A
-        # During this sleep, Transaction B is running but BLOCKED at the database level.
-        time.sleep(4)
-
-        # Step 3: Transaction A completes booking
-        if s_locked.capacity > 0:
-            s_locked.capacity -= 1
-            s_locked.save()
-            status = "Booking Successful"
-        else:
-            status = "Failed (No Seats)"
+    try:
+        # Reset for demo: Ensure capacity is 1
+        with transaction.atomic():
+            section = Section.objects.select_for_update().get(id=1)
+            section.capacity = 1
+            section.save()
             
-        results['steps'].append({
-            'step': 3,
-            'action': 'Transaction A: Book Seat & Commit',
-            'value': f'{status}. Remaining Capacity: {s_locked.capacity}',
-            'time': 'T3'
-        })
+            # Clear enrollments for this section to ensure seat is free
+            Enrollment.objects.filter(section=section).delete()
+            
+        # Start background task (Transaction B)
+        # We delay it slightly to ensure Transaction A starts first
+        attempt_booking_task.delay(section_id=1, student_id=3, delay=0.5)
+        
+        # Start foreground transaction (Transaction A)
+        # Simulate user reading the page, thinking, then booking
+        time.sleep(0.1) 
+        
+        with transaction.atomic():
+            # 1. Lock the row
+            sec = Section.objects.select_for_update().get(id=1)
+            
+            # 2. Simulate processing time (hold the lock)
+            time.sleep(2.0)
+            
+            # 3. Check capacity and book
+            if sec.capacity > 0:
+                Enrollment.objects.create(student_id=2, section=sec)
+                sec.capacity -= 1
+                sec.save()
+                result = "Transaction A: Successfully booked the last seat!"
+            else:
+                result = "Transaction A: Failed - Seat taken!"
+                
+    except Exception as e:
+        result = f"Error: {str(e)}"
 
-    # After the block exits, Transaction A commits.
-    # Transaction B unblocks, reads the new capacity (0), and fails.
+    return render(request, 'adbms/simulation_result.html', {
+        'title': 'Row Locking (SELECT FOR UPDATE)',
+        'result': result,
+        'explanation': """
+        <strong>Scenario:</strong> Two users try to book the LAST seat at the same time.<br><br>
+        <strong>Without Locking:</strong> Both read capacity=1, both book, capacity becomes -1 (Overbooking).<br>
+        <strong>With SELECT FOR UPDATE:</strong><br>
+        1. Transaction A locks the row.<br>
+        2. Transaction B tries to read/lock but is BLOCKED (waits).<br>
+        3. Transaction A books and commits.<br>
+        4. Transaction B unblocks, reads new capacity=0, and fails gracefully.
+        """
+    })
+
+
+def trigger_demo(request):
+    """
+    Demonstrates Database Triggers & Stored Procedures (Audit Logging).
+    Allows users to perform CRUD operations on 4 tables and see the automatic audit logs.
+    """
+    from .models import AuditLog
+    from courses.models import Course, Section
+    from enrollment.models import Enrollment, Waitlist
+    from users.models import User
+    from django.utils import timezone
+    import json
     
-    results['conclusion'] = "Transaction A successfully locked the row. Transaction B was forced to wait until A finished, preventing a race condition (Double Booking)."
-
-    return render(request, 'adbms/simulation_result.html', {'results': results})
+    # Handle demo actions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        table = request.POST.get('table')
+        
+        try:
+            with transaction.atomic():
+                # --- ENROLLMENT ACTIONS ---
+                if table == 'enrollment':
+                    student = User.objects.get(id=2) # Use a demo student
+                    section = Section.objects.first()
+                    
+                    if action == 'create':
+                        # Create new enrollment
+                        if not Enrollment.objects.filter(student=student, section=section).exists():
+                            Enrollment.objects.create(student=student, section=section)
+                            
+                    elif action == 'update':
+                        # Update grade
+                        enrollment = Enrollment.objects.filter(student=student, section=section).first()
+                        if enrollment:
+                            grades = ['A', 'B', 'C', 'B+', 'A-']
+                            current_grade = enrollment.grade
+                            new_grade = random.choice([g for g in grades if g != current_grade])
+                            enrollment.grade = new_grade
+                            enrollment.save()
+                            
+                    elif action == 'delete':
+                        # Delete enrollment
+                        Enrollment.objects.filter(student=student, section=section).delete()
+                
+                # --- COURSE ACTIONS ---
+                elif table == 'course':
+                    if action == 'create':
+                        code = f"DEMO-{random.randint(100, 999)}"
+                        Course.objects.create(
+                            code=code,
+                            title=f"Demo Course {code}",
+                            description="Created via Trigger Demo",
+                            credits=3
+                        )
+                    elif action == 'update':
+                        course = Course.objects.filter(code__startswith='DEMO-').last()
+                        if course:
+                            course.credits = random.choice([3, 4, 2])
+                            course.save()
+                    elif action == 'delete':
+                        course = Course.objects.filter(code__startswith='DEMO-').last()
+                        if course:
+                            course.delete()
+                            
+                # --- SECTION ACTIONS ---
+                elif table == 'section':
+                    course = Course.objects.first()
+                    if action == 'create':
+                        Section.objects.create(
+                            course=course,
+                            semester="Summer 2026",
+                            capacity=30,
+                            room_number="Demo Room",
+                            schedule="Mon 10:00"
+                        )
+                    elif action == 'update':
+                        section = Section.objects.filter(semester="Summer 2026").last()
+                        if section:
+                            section.capacity = random.randint(20, 50)
+                            section.save()
+                    elif action == 'delete':
+                        section = Section.objects.filter(semester="Summer 2026").last()
+                        if section:
+                            section.delete()
+                            
+                # --- WAITLIST ACTIONS ---
+                elif table == 'waitlist':
+                    student = User.objects.get(id=3) # Another demo student
+                    section = Section.objects.first()
+                    
+                    if action == 'create':
+                        if not Waitlist.objects.filter(student=student, section=section).exists():
+                            Waitlist.objects.create(student=student, section=section)
+                    elif action == 'update':
+                        wl = Waitlist.objects.filter(student=student, section=section).first()
+                        if wl:
+                            wl.notified = not wl.notified
+                            wl.save()
+                    elif action == 'delete':
+                        Waitlist.objects.filter(student=student, section=section).delete()
+                        
+        except Exception as e:
+            # In a real app, we'd handle this better
+            pass
+            
+        return redirect('trigger-demo')
+    
+    # Fetch recent audit logs
+    logs = AuditLog.objects.all()[:50]
+    
+    # Calculate statistics
+    stats = {
+        'insert': AuditLog.objects.filter(operation='INSERT').count(),
+        'update': AuditLog.objects.filter(operation='UPDATE').count(),
+        'delete': AuditLog.objects.filter(operation='DELETE').count(),
+        'total': AuditLog.objects.count()
+    }
+    
+    return render(request, 'adbms_demo/trigger_demo.html', {
+        'logs': logs,
+        'stats': stats
+    })

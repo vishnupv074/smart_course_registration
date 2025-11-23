@@ -173,7 +173,11 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 
 ### Remaining ADBMS Concepts
 *   **Normalization vs Denormalization:** Implement materialized views for analytics (e.g., "Average GPA per Course").
-*   **Triggers & Stored Procedures:** Implement PL/pgSQL triggers for audit logs (e.g., logging grade changes).
+*   **[DONE] Triggers & Stored Procedures:** Implemented PL/pgSQL triggers for automatic audit logging on Enrollment, Course, Section, and Waitlist tables.
+    *   **AuditLog Model:** Tracks operation type, record ID, old/new data (JSON), and change summary.
+    *   **PL/pgSQL Functions:** 4 dedicated functions to capture changes and insert audit records.
+    *   **Demo Interface:** Interactive dashboard to perform CRUD operations and view real-time audit logs.
+    *   **Documentation:** Added detailed concept explanation and comparison with application-level auditing.
 *   **MVCC & Visibility:** Demonstrate Postgres versioning and visibility rules.
 *   **Replication / HA:** Simulate read replica setup and consistency tradeoffs.
 *   **Backup & Restore:** Demonstrate `pg_dump` and `pg_restore` workflows.
