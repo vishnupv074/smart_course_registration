@@ -30,8 +30,20 @@ class UserUpdateForm(forms.ModelForm):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['bio', 'phone_number']
+        fields = [
+            'avatar', 'bio', 'phone_number', 
+            'date_of_birth', 'address', 'city', 'country',
+            'linkedin_url', 'github_url', 'twitter_url'
+        ]
         widgets = {
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+1234567890'}),
+            'avatar': forms.FileInput(attrs={'class': 'form-control'}),
+            'date_of_birth': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '123 Main St'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'New York'}),
+            'country': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'USA'}),
+            'linkedin_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://linkedin.com/in/username'}),
+            'github_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://github.com/username'}),
+            'twitter_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://twitter.com/username'}),
         }

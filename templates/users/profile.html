@@ -10,48 +10,97 @@
                 <h4 class="mb-0"><i class="fas fa-user-circle me-2"></i>User Profile</h4>
             </div>
             <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted">
-                        <strong>Username:</strong>
+                <div class="row mb-4">
+                    <div class="col-md-3 text-center">
+                        {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="Profile Picture" class="img-fluid rounded-circle"
+                            style="max-width: 150px; max-height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                            style="width: 150px; height: 150px; font-size: 60px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-8">
-                        {{ user.username }}
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted">
-                        <strong>Email:</strong>
-                    </div>
-                    <div class="col-md-8">
-                        {{ user.email }}
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted">
-                        <strong>Role:</strong>
-                    </div>
-                    <div class="col-md-8">
+                    <div class="col-md-9">
+                        <h3>{{ user.get_full_name|default:user.username }}</h3>
+                        <p class="text-muted">@{{ user.username }}</p>
                         <span class="badge bg-info">{{ user.get_role_display }}</span>
+                        {% if user.email_verified %}
+                        <span class="badge bg-success"><i class="fas fa-check-circle"></i> Email Verified</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle"></i> Email Not
+                            Verified</span>
+                        <a href="{% url 'send-verification' %}" class="btn btn-sm btn-outline-primary ms-2">Verify
+                            Email</a>
+                        {% endif %}
                     </div>
                 </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted">
-                        <strong>Phone Number:</strong>
-                    </div>
-                    <div class="col-md-8">
-                        {{ user.profile.phone_number|default:"Not provided" }}
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-4 text-muted">
-                        <strong>Bio:</strong>
-                    </div>
-                    <div class="col-md-8">
-                        {{ user.profile.bio|default:"No bio added yet" }}
-                    </div>
-                </div>
+
                 <hr>
-                <div class="text-end">
+
+                <h5 class="mb-3">Contact Information</h5>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted"><strong>Email:</strong></div>
+                    <div class="col-md-8">{{ user.email }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted"><strong>Phone:</strong></div>
+                    <div class="col-md-8">{{ user.profile.phone_number|default:"Not provided" }}</div>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">Personal Information</h5>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted"><strong>Date of Birth:</strong></div>
+                    <div class="col-md-8">{{ user.profile.date_of_birth|date:"F d, Y"|default:"Not provided" }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted"><strong>Address:</strong></div>
+                    <div class="col-md-8">{{ user.profile.address|default:"Not provided" }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted"><strong>City:</strong></div>
+                    <div class="col-md-8">{{ user.profile.city|default:"Not provided" }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 text-muted"><strong>Country:</strong></div>
+                    <div class="col-md-8">{{ user.profile.country|default:"Not provided" }}</div>
+                </div>
+
+                <hr>
+
+                <h5 class="mb-3">About</h5>
+                <p>{{ user.profile.bio|default:"No bio added yet" }}</p>
+
+                {% if user.profile.linkedin_url or user.profile.github_url or user.profile.twitter_url %}
+                <hr>
+                <h5 class="mb-3">Social Media</h5>
+                <div class="d-flex gap-3">
+                    {% if user.profile.linkedin_url %}
+                    <a href="{{ user.profile.linkedin_url }}" target="_blank" class="btn btn-outline-primary">
+                        <i class="fab fa-linkedin"></i> LinkedIn
+                    </a>
+                    {% endif %}
+                    {% if user.profile.github_url %}
+                    <a href="{{ user.profile.github_url }}" target="_blank" class="btn btn-outline-dark">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    {% endif %}
+                    {% if user.profile.twitter_url %}
+                    <a href="{{ user.profile.twitter_url }}" target="_blank" class="btn btn-outline-info">
+                        <i class="fab fa-twitter"></i> Twitter
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'change-password' %}" class="btn btn-warning">
+                        <i class="fas fa-key me-1"></i>Change Password
+                    </a>
                     <a href="{% url 'edit-profile' %}" class="btn btn-primary">
                         <i class="fas fa-edit me-1"></i>Edit Profile
                     </a>

@@ -42,7 +42,7 @@ def profile(request):
 def edit_profile(request):
     if request.method == 'POST':
         u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
+        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
         if u_form.is_valid() and p_form.is_valid():
             u_form.save()
             p_form.save()
@@ -58,3 +58,66 @@ def edit_profile(request):
     }
 
     return render(request, 'users/edit_profile.html', context)
+
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Keep user logged in
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('profile')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'users/change_password.html', {'form': form})
+
+import secrets
+from django.core.mail import send_mail
+from django.conf import settings
+from django.urls import reverse
+
+@login_required
+def send_verification_email(request):
+    if request.user.email_verified:
+        messages.info(request, 'Your email is already verified.')
+        return redirect('profile')
+    
+    # Generate verification token
+    token = secrets.token_urlsafe(32)
+    request.user.verification_token = token
+    request.user.save()
+    
+    # Build verification URL
+    verification_url = request.build_absolute_uri(
+        reverse('verify-email', kwargs={'token': token})
+    )
+    
+    # Send email
+    send_mail(
+        'Verify your email address',
+        f'Click the link to verify your email: {verification_url}',
+        settings.DEFAULT_FROM_EMAIL,
+        [request.user.email],
+        fail_silently=False,
+    )
+    
+    messages.success(request, 'Verification email sent! Please check your inbox.')
+    return redirect('profile')
+
+def verify_email(request, token):
+    try:
+        user = User.objects.get(verification_token=token)
+        user.email_verified = True
+        user.verification_token = None
+        user.save()
+        messages.success(request, 'Email verified successfully!')
+    except User.DoesNotExist:
+        messages.error(request, 'Invalid verification token.')
+    
+    return redirect('profile')
