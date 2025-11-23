@@ -3,38 +3,350 @@
 {% block title %}Register - SmartReg{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
+<style>
+    .auth-container {
+        min-height: calc(100vh - 400px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 2rem 0;
+    }
+
+    .auth-card {
+        max-width: 550px;
+        width: 100%;
+        position: relative;
+        z-index: 2;
+    }
+
+    .auth-header {
+        background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        text-align: center;
+    }
+
+    .auth-header h2 {
+        color: white;
+        margin: 0;
+        font-weight: 700;
+        font-size: 2rem;
+    }
+
+    .auth-header p {
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0.5rem 0 0 0;
+        font-size: 0.95rem;
+    }
+
+    .auth-body {
+        padding: 2.5rem;
+    }
+
+    .role-selection {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .role-card {
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        position: relative;
+    }
+
+    .role-card input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .role-card:hover {
+        border-color: var(--success);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .role-card input[type="radio"]:checked+.role-content {
+        color: var(--success);
+    }
+
+    .role-card input[type="radio"]:checked~.role-card {
+        border-color: var(--success);
+        background-color: rgba(16, 185, 129, 0.05);
+    }
+
+    .role-card.active {
+        border-color: var(--success);
+        background-color: rgba(16, 185, 129, 0.05);
+    }
+
+    .role-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .role-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .form-floating {
+        margin-bottom: 1.5rem;
+    }
+
+    .input-icon {
+        position: relative;
+    }
+
+    .input-icon i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-tertiary);
+        z-index: 4;
+    }
+
+    .input-icon .form-control {
+        padding-left: 2.75rem;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-tertiary);
+        cursor: pointer;
+        z-index: 4;
+        padding: 0.5rem;
+    }
+
+    .auth-footer {
+        background: var(--bg-secondary);
+        padding: 1.5rem 2rem;
+        border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+        text-align: center;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn-auth {
+        width: 100%;
+        padding: 0.875rem;
+        font-weight: 600;
+        font-size: 1.05rem;
+    }
+
+    @media (max-width: 576px) {
+        .auth-body {
+            padding: 1.5rem;
+        }
+
+        .role-selection {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="bg-decoration">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="auth-card animate-scale-in">
         <div class="card">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Register</h4>
+            <div class="auth-header">
+                <i class="fas fa-user-plus fa-2x mb-3"></i>
+                <h2>Create Account</h2>
+                <p>Join SmartReg to start your academic journey</p>
             </div>
-            <div class="card-body">
-                <form method="post" novalidate>
+
+            <div class="auth-body">
+                <form method="post" id="registerForm" novalidate>
                     {% csrf_token %}
 
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
+                    <!-- Username -->
+                    <div class="form-floating input-icon">
+                        <i class="fas fa-user"></i>
+                        {{ form.username }}
+                        <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+                        {% if form.username.help_text %}
+                        <div class="form-text">{{ form.username.help_text }}</div>
                         {% endif %}
-                        {% for error in field.errors %}
+                        {% for error in form.username.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-floating input-icon">
+                        <i class="fas fa-envelope"></i>
+                        {{ form.email }}
+                        <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                        {% for error in form.email.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- First Name -->
+                    <div class="form-floating input-icon">
+                        <i class="fas fa-id-card"></i>
+                        {{ form.first_name }}
+                        <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                        {% for error in form.first_name.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="form-floating input-icon">
+                        <i class="fas fa-id-card"></i>
+                        {{ form.last_name }}
+                        <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+                        {% for error in form.last_name.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Your Role</label>
+                        <div class="role-selection">
+                            <label class="role-card" data-role="STUDENT">
+                                {{ form.role }}
+                                <div class="role-content">
+                                    <div class="role-icon">
+                                        <i class="fas fa-user-graduate"></i>
+                                    </div>
+                                    <div class="role-name">Student</div>
+                                </div>
+                            </label>
+                            <label class="role-card" data-role="INSTRUCTOR">
+                                <input type="radio" name="role" value="INSTRUCTOR">
+                                <div class="role-content">
+                                    <div class="role-icon">
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                    </div>
+                                    <div class="role-name">Instructor</div>
+                                </div>
+                            </label>
+                        </div>
+                        {% for error in form.role.errors %}
                         <div class="text-danger small">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    {% endfor %}
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success">Register</button>
+                    <!-- Password -->
+                    <div class="form-floating input-icon">
+                        <i class="fas fa-lock"></i>
+                        {{ form.password1 }}
+                        <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                        <button type="button" class="password-toggle"
+                            onclick="togglePassword('id_password1', 'toggleIcon1')">
+                            <i class="fas fa-eye" id="toggleIcon1"></i>
+                        </button>
+                        {% if form.password1.help_text %}
+                        <div class="form-text">{{ form.password1.help_text }}</div>
+                        {% endif %}
+                        {% for error in form.password1.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
                     </div>
+
+                    <!-- Password Confirmation -->
+                    <div class="form-floating input-icon">
+                        <i class="fas fa-lock"></i>
+                        {{ form.password2 }}
+                        <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                        <button type="button" class="password-toggle"
+                            onclick="togglePassword('id_password2', 'toggleIcon2')">
+                            <i class="fas fa-eye" id="toggleIcon2"></i>
+                        </button>
+                        {% for error in form.password2.errors %}
+                        <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-auth hover-lift" id="registerBtn">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
+                    </button>
                 </form>
             </div>
-            <div class="card-footer text-center">
-                Already have an account? <a href="{% url 'login' %}">Login here</a>
+
+            <div class="auth-footer">
+                Already have an account?
+                <a href="{% url 'login' %}" class="hover-underline">
+                    <strong>Login here</strong>
+                </a>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Role selection handling
+    document.querySelectorAll('.role-card').forEach(card => {
+        card.addEventListener('click', function () {
+            // Remove active class from all cards
+            document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked card
+            this.classList.add('active');
+
+            // Update the hidden radio button
+            const role = this.getAttribute('data-role');
+            const radioInput = document.querySelector(`input[name="role"][value="${role}"]`);
+            if (radioInput) {
+                radioInput.checked = true;
+            }
+        });
+    });
+
+    // Set initial active state
+    const checkedRole = document.querySelector('input[name="role"]:checked');
+    if (checkedRole) {
+        const roleCard = document.querySelector(`.role-card[data-role="${checkedRole.value}"]`);
+        if (roleCard) {
+            roleCard.classList.add('active');
+        }
+    }
+
+    function togglePassword(inputId, iconId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(iconId);
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    // Add loading state on form submit
+    document.getElementById('registerForm').addEventListener('submit', function (e) {
+        const btn = document.getElementById('registerBtn');
+        if (window.Loading) {
+            window.Loading.show(btn, 'Creating account...');
+        }
+    });
+
+    // Add form-control class to all form fields
+    document.querySelectorAll('#registerForm input:not([type="radio"])').forEach(input => {
+        input.classList.add('form-control');
+    });
+</script>
 {% endblock %}

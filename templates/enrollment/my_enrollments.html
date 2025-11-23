@@ -2,157 +2,247 @@
 
 {% block title %}My Enrollments - SmartReg{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="fas fa-graduation-cap text-primary me-2"></i>My Enrollments</h2>
-    <a href="{% url 'courses' %}" class="btn btn-primary">
-        <i class="fas fa-search"></i> Browse Courses
-    </a>
-</div>
+{% block extra_css %}
+<style>
+    .page-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 2.5rem 0;
+        margin: -2rem -15px 2rem;
+        border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+    }
 
-{% if enrollments %}
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Course</th>
-                        <th>Section</th>
-                        <th>Instructor</th>
-                        <th>Schedule</th>
-                        <th>Room</th>
-                        <th>Enrolled At</th>
-                        <th>Grade</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for enrollment in enrollments %}
-                    <tr>
-                        <td>
-                            <strong>{{ enrollment.section.course.code }}</strong><br>
-                            {{ enrollment.section.course.title }}
-                        </td>
-                        <td>{{ enrollment.section.semester }} (Sec {{ enrollment.section.id }})</td>
-                        <td>
-                            {% if enrollment.section.instructor.get_full_name %}
-                            {{ enrollment.section.instructor.get_full_name }}
-                            {% else %}
-                            {{ enrollment.section.instructor.username }}
-                            {% endif %}
-                        </td>
-                        <td>{{ enrollment.section.schedule }}</td>
-                        <td>{{ enrollment.section.room_number }}</td>
-                        <td>{{ enrollment.enrolled_at|date:"M d, Y H:i" }}</td>
-                        <td>
-                            {% if enrollment.grade %}
-                            <span class="badge bg-success">{{ enrollment.grade }}</span>
-                            {% else %}
-                            <span class="badge bg-secondary">N/A</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-success">Enrolled</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger drop-btn"
-                                data-section-id="{{ enrollment.section.id }}"
-                                data-course-code="{{ enrollment.section.course.code }}">
-                                Drop Course
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    .section-card {
+        border-left: 4px solid var(--success);
+        margin-bottom: 1rem;
+    }
+
+    .waitlist-card {
+        border-left: 4px solid var(--warning);
+    }
+
+    .course-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .course-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: var(--radius-lg);
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--gray-300);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-graduation-cap me-2"></i>My Enrollments
+                </h1>
+                <p class="mb-0 opacity-75">Manage your course enrollments and waitlists</p>
+            </div>
+            <a href="{% url 'courses' %}" class="btn btn-light hover-lift">
+                <i class="fas fa-search me-2"></i>Browse Courses
+            </a>
         </div>
     </div>
 </div>
+
+{% if enrollments %}
+<h4 class="mb-3">
+    <i class="fas fa-check-circle text-success me-2"></i>Active Enrollments
+    <span class="badge bg-success ms-2">{{ enrollments|length }}</span>
+</h4>
+
+<div class="row">
+    {% for enrollment in enrollments %}
+    <div class="col-12 mb-3">
+        <div class="card section-card hover-lift">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="course-info">
+                            <div class="course-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">
+                                    <span class="text-primary fw-bold">{{ enrollment.section.course.code }}</span>
+                                    <span class="mx-2">•</span>
+                                    {{ enrollment.section.course.title }}
+                                </h5>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-user me-1"></i>
+                                    {{
+                                    enrollment.section.instructor.get_full_name|default:enrollment.section.instructor.username
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0">
+                        <div class="mb-2">
+                            <i class="fas fa-clock text-muted me-2"></i>
+                            <small>{{ enrollment.section.schedule }}</small>
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-door-open text-muted me-2"></i>
+                            <small>{{ enrollment.section.room_number }}</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar text-muted me-2"></i>
+                            <small>{{ enrollment.section.semester }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0 text-md-end">
+                        {% if enrollment.grade %}
+                        <div class="mb-2">
+                            <span class="badge bg-success">Grade: {{ enrollment.grade }}</span>
+                        </div>
+                        {% endif %}
+                        <small class="text-muted d-block mb-2">
+                            Enrolled: {{ enrollment.enrolled_at|date:"M d, Y" }}
+                        </small>
+                        <button class="btn btn-sm btn-outline-danger drop-btn"
+                            data-section-id="{{ enrollment.section.id }}"
+                            data-course-code="{{ enrollment.section.course.code }}">
+                            <i class="fas fa-times me-1"></i>Drop Course
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 {% else %}
-<div class="alert alert-info">
-    You are not enrolled in any courses yet. <a href="{% url 'courses' %}">Browse Courses</a>
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="fas fa-graduation-cap"></i>
+        <h5>No Enrollments Yet</h5>
+        <p class="text-muted mb-4">You haven't enrolled in any courses yet.</p>
+        <a href="{% url 'courses' %}" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i>Browse Courses
+        </a>
+    </div>
 </div>
 {% endif %}
 
 <!-- Waitlist Section -->
 {% if waitlists %}
-<div class="mt-5">
-    <h3 class="mb-3"><i class="fas fa-clock text-warning me-2"></i>My Waitlists</h3>
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Course</th>
-                            <th>Section</th>
-                            <th>Instructor</th>
-                            <th>Schedule</th>
-                            <th>Room</th>
-                            <th>Joined At</th>
-                            <th>Position</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for waitlist in waitlists %}
-                        <tr>
-                            <td>
-                                <strong>{{ waitlist.section.course.code }}</strong><br>
-                                {{ waitlist.section.course.title }}
-                            </td>
-                            <td>{{ waitlist.section.semester }} (Sec {{ waitlist.section.id }})</td>
-                            <td>
-                                {% if waitlist.section.instructor.get_full_name %}
-                                {{ waitlist.section.instructor.get_full_name }}
-                                {% else %}
-                                {{ waitlist.section.instructor.username }}
-                                {% endif %}
-                            </td>
-                            <td>{{ waitlist.section.schedule }}</td>
-                            <td>{{ waitlist.section.room_number }}</td>
-                            <td>{{ waitlist.joined_at|date:"M d, Y H:i" }}</td>
-                            <td>
-                                <span class="badge bg-warning text-dark">
-                                    #{{ waitlist.get_position }}
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-danger leave-waitlist-btn"
-                                    data-waitlist-id="{{ waitlist.id }}"
-                                    data-course-code="{{ waitlist.section.course.code }}">
-                                    Leave Waitlist
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<h4 class="mb-3 mt-5">
+    <i class="fas fa-clock text-warning me-2"></i>Waitlists
+    <span class="badge bg-warning text-dark ms-2">{{ waitlists|length }}</span>
+</h4>
+
+<div class="row">
+    {% for waitlist in waitlists %}
+    <div class="col-12 mb-3">
+        <div class="card waitlist-card hover-lift">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="course-info">
+                            <div class="course-icon"
+                                style="background: linear-gradient(135deg, var(--warning) 0%, var(--warning-light) 100%);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">
+                                    <span class="text-primary fw-bold">{{ waitlist.section.course.code }}</span>
+                                    <span class="mx-2">•</span>
+                                    {{ waitlist.section.course.title }}
+                                </h5>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-user me-1"></i>
+                                    {{
+                                    waitlist.section.instructor.get_full_name|default:waitlist.section.instructor.username
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0">
+                        <div class="mb-2">
+                            <i class="fas fa-clock text-muted me-2"></i>
+                            <small>{{ waitlist.section.schedule }}</small>
+                        </div>
+                        <div class="mb-2">
+                            <i class="fas fa-door-open text-muted me-2"></i>
+                            <small>{{ waitlist.section.room_number }}</small>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar text-muted me-2"></i>
+                            <small>{{ waitlist.section.semester }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-3 mt-md-0 text-md-end">
+                        <div class="mb-2">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-list-ol me-1"></i>Position #{{ waitlist.get_position }}
+                            </span>
+                        </div>
+                        <small class="text-muted d-block mb-2">
+                            Joined: {{ waitlist.joined_at|date:"M d, Y" }}
+                        </small>
+                        <button class="btn btn-sm btn-outline-danger leave-waitlist-btn"
+                            data-waitlist-id="{{ waitlist.id }}" data-course-code="{{ waitlist.section.course.code }}">
+                            <i class="fas fa-times me-1"></i>Leave Waitlist
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    {% endfor %}
 </div>
 {% endif %}
-
 
 <!-- Drop Course Modal -->
 <div class="modal fade" id="dropModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Drop Course</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Drop Course
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to drop <strong id="dropCourseCode"></strong>?</p>
-                <p class="text-danger"><small>This action cannot be undone.</small></p>
+                <p class="text-danger">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <small>This action cannot be undone.</small>
+                </p>
                 <div id="dropError" class="alert alert-danger d-none"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDropBtn">Drop Course</button>
+                <button type="button" class="btn btn-danger" id="confirmDropBtn">
+                    <i class="fas fa-check me-2"></i>Drop Course
+                </button>
             </div>
         </div>
     </div>
@@ -181,8 +271,9 @@
         confirmDropBtn.addEventListener('click', function () {
             if (!currentSectionId) return;
 
-            confirmDropBtn.disabled = true;
-            confirmDropBtn.textContent = 'Dropping...';
+            if (window.Loading) {
+                window.Loading.show(confirmDropBtn, 'Dropping...');
+            }
 
             fetch(`/api/drop/${currentSectionId}/`, {
                 method: 'POST',
@@ -194,19 +285,24 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        window.location.reload();
+                        if (window.Toast) {
+                            window.Toast.success('Successfully dropped the course!');
+                        }
+                        setTimeout(() => window.location.reload(), 1000);
                     } else {
                         dropErrorDiv.textContent = data.message || 'Drop failed';
                         dropErrorDiv.classList.remove('d-none');
-                        confirmDropBtn.disabled = false;
-                        confirmDropBtn.textContent = 'Drop Course';
+                        if (window.Loading) {
+                            window.Loading.hide(confirmDropBtn);
+                        }
                     }
                 })
                 .catch(error => {
                     dropErrorDiv.textContent = 'Network error occurred';
                     dropErrorDiv.classList.remove('d-none');
-                    confirmDropBtn.disabled = false;
-                    confirmDropBtn.textContent = 'Drop Course';
+                    if (window.Loading) {
+                        window.Loading.hide(confirmDropBtn);
+                    }
                 });
         });
 
@@ -219,8 +315,9 @@
                 const courseCode = this.dataset.courseCode;
 
                 if (confirm(`Are you sure you want to leave the waitlist for ${courseCode}?`)) {
-                    btn.disabled = true;
-                    btn.textContent = 'Leaving...';
+                    if (window.Loading) {
+                        window.Loading.show(btn, 'Leaving...');
+                    }
 
                     fetch(`/api/waitlist/leave/${waitlistId}/`, {
                         method: 'POST',
@@ -232,17 +329,26 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.status === 'success') {
-                                window.location.reload();
+                                if (window.Toast) {
+                                    window.Toast.success('Successfully left the waitlist!');
+                                }
+                                setTimeout(() => window.location.reload(), 1000);
                             } else {
-                                alert(data.message || 'Failed to leave waitlist');
-                                btn.disabled = false;
-                                btn.textContent = 'Leave Waitlist';
+                                if (window.Toast) {
+                                    window.Toast.error(data.message || 'Failed to leave waitlist');
+                                }
+                                if (window.Loading) {
+                                    window.Loading.hide(btn);
+                                }
                             }
                         })
                         .catch(error => {
-                            alert('Network error occurred');
-                            btn.disabled = false;
-                            btn.textContent = 'Leave Waitlist';
+                            if (window.Toast) {
+                                window.Toast.error('Network error occurred');
+                            }
+                            if (window.Loading) {
+                                window.Loading.hide(btn);
+                            }
                         });
                 }
             });

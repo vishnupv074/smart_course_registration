@@ -2,33 +2,143 @@
 
 {% block title %}Course Catalog - SmartReg{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 2.5rem 0;
+        margin: -2rem -15px 2rem;
+        border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+    }
+
+    .search-bar {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .search-bar .form-control {
+        border-radius: var(--radius-full);
+        padding: 0.75rem 1.5rem;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .search-bar .btn {
+        border-radius: var(--radius-full);
+        padding: 0.75rem 1.5rem;
+    }
+
+    .course-card {
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--primary-start);
+    }
+
+    .course-header {
+        background: var(--bg-tertiary);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .course-code {
+        font-weight: 700;
+        color: var(--primary-start);
+        font-size: 1.1rem;
+    }
+
+    .section-table {
+        margin-bottom: 0;
+    }
+
+    .section-table th {
+        background: transparent;
+        font-size: 0.85rem;
+    }
+
+    .capacity-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .capacity-bar {
+        width: 60px;
+        height: 6px;
+        background: var(--gray-200);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+    }
+
+    .capacity-fill {
+        height: 100%;
+        background: var(--success);
+        transition: width var(--transition-base);
+    }
+
+    .capacity-fill.full {
+        background: var(--danger);
+    }
+
+    .capacity-fill.almost-full {
+        background: var(--warning);
+    }
+
+    .enroll-btn {
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0"><i class="fas fa-book-open text-primary me-2"></i>Course Catalog</h2>
-    <form method="get" class="d-flex" style="width: 300px;">
-        <input type="text" name="search" class="form-control me-2" placeholder="Search courses..."
-            value="{{ search_query }}">
-        <button type="submit" class="btn btn-primary">Search</button>
-    </form>
+<div class="page-header text-center">
+    <div class="container">
+        <h1 class="mb-3">
+            <i class="fas fa-book-open me-2"></i>Course Catalog
+        </h1>
+        <p class="mb-4">Explore our comprehensive course offerings</p>
+
+        <form method="get" class="search-bar">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control"
+                    placeholder="Search courses by code, title, or instructor..." value="{{ search_query }}">
+                <button type="submit" class="btn btn-light">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {% if page_obj %}
-<p class="text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
-    courses</p>
+<p class="text-muted mb-4">
+    <i class="fas fa-info-circle me-1"></i>
+    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} courses
+</p>
 {% endif %}
 
 {% for course in page_obj %}
-<div class="card mb-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">{{ course.code }} - {{ course.title }} <span class="badge bg-secondary float-end">{{ course.credits }} Credits</span></h5>
+<div class="card course-card hover-lift">
+    <div class="course-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="course-code">{{ course.code }}</span>
+                <span class="mx-2">•</span>
+                <span class="fw-semibold">{{ course.title }}</span>
+            </div>
+            <span class="badge badge-gradient">{{ course.credits }} Credits</span>
+        </div>
     </div>
-    <div class="card-body">
-        <p class="card-text">{{ course.description }}</p>
 
-        <h6 class="mt-4 mb-3">Available Sections:</h6>
+    <div class="card-body">
+        <p class="text-secondary mb-4">{{ course.description }}</p>
+
+        <h6 class="mb-3 fw-semibold">
+            <i class="fas fa-list me-2 text-primary"></i>Available Sections
+        </h6>
+
         {% if course.sections.all %}
         <div class="table-responsive">
-            <table class="table table-sm table-hover">
+            <table class="table section-table table-hover">
                 <thead>
                     <tr>
                         <th>Section</th>
@@ -42,27 +152,50 @@
                 <tbody>
                     {% for section in course.sections.all %}
                     <tr>
-                        <td>{{ section.semester }} (Sec {{ section.id }})</td>
-                        <td>{{ section.instructor.get_full_name|default:section.instructor.username }}</td>
-                        <td>{{ section.schedule }}</td>
-                        <td>{{ section.room_number }}</td>
                         <td>
-                            {% with enrolled_count=section.enrollments.count %}
-                            <span
-                                class="{% if enrolled_count >= section.capacity %}text-danger{% else %}text-success{% endif %}">
-                                {{ enrolled_count }} / {{ section.capacity }}
-                            </span>
+                            <strong>{{ section.semester }}</strong>
+                            <br><small class="text-muted">Sec {{ section.id }}</small>
+                        </td>
+                        <td>{{ section.instructor.get_full_name|default:section.instructor.username }}</td>
+                        <td>
+                            <i class="fas fa-clock text-muted me-1"></i>
+                            {{ section.schedule }}
+                        </td>
+                        <td>
+                            <i class="fas fa-door-open text-muted me-1"></i>
+                            {{ section.room_number }}
+                        </td>
+                        <td>
+                            {% with enrolled=section.enrollments.count capacity=section.capacity %}
+                            {% widthratio enrolled capacity 100 as percent %}
+                            <div class="capacity-indicator">
+                                <div class="capacity-bar">
+                                    {% if enrolled >= capacity %}
+                                    <div class="capacity-fill full" style="width: 100%;"></div>
+                                    {% elif percent >= 80 %}
+                                    <div class="capacity-fill almost-full" style="width: {{ percent|default:0 }}%;">
+                                    </div>
+                                    {% else %}
+                                    <div class="capacity-fill" style="width: {{ percent|default:0 }}%;"></div>
+                                    {% endif %}
+                                </div>
+                                <span class="{% if enrolled >= capacity %}text-danger{% else %}text-success{% endif %}">
+                                    {{ enrolled }}/{{ capacity }}
+                                </span>
+                            </div>
                             {% endwith %}
                         </td>
                         <td>
                             {% if user.is_authenticated and user.role == 'STUDENT' %}
                             <button class="btn btn-sm btn-primary enroll-btn" data-section-id="{{ section.id }}"
                                 data-course-code="{{ course.code }}">
-                                Enroll
+                                <i class="fas fa-plus me-1"></i>Enroll
                             </button>
                             {% elif not user.is_authenticated %}
                             <a href="{% url 'login' %}?next={{ request.path }}"
-                                class="btn btn-sm btn-outline-primary">Login to Enroll</a>
+                                class="btn btn-sm btn-outline-primary enroll-btn">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
                             {% endif %}
                         </td>
                     </tr>
@@ -71,32 +204,39 @@
             </table>
         </div>
         {% else %}
-        <p class="text-muted">No sections available for this course.</p>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No sections available for this course.
+        </div>
         {% endif %}
     </div>
 </div>
 {% empty %}
-<div class="alert alert-info">
-    No courses found.
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h5>No courses found</h5>
+        <p class="text-muted">Try adjusting your search criteria</p>
+    </div>
 </div>
 {% endfor %}
 
-<!-- Pagination Controls -->
+<!-- Pagination -->
 {% if page_obj.has_other_pages %}
-<nav aria-label="Course pagination">
+<nav aria-label="Course pagination" class="mt-4">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
         <li class="page-item">
-            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">&laquo;
-                First</a>
+            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+                <i class="fas fa-angle-double-left"></i>
+            </a>
         </li>
         <li class="page-item">
             <a class="page-link"
-                href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+                href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                <i class="fas fa-angle-left"></i>
+            </a>
         </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">&laquo; First</span></li>
-        <li class="page-item disabled"><span class="page-link">Previous</span></li>
         {% endif %}
 
         <li class="page-item active">
@@ -106,16 +246,16 @@
         {% if page_obj.has_next %}
         <li class="page-item">
             <a class="page-link"
-                href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+                href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                <i class="fas fa-angle-right"></i>
+            </a>
         </li>
         <li class="page-item">
             <a class="page-link"
-                href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">Last
-                &raquo;</a>
+                href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                <i class="fas fa-angle-double-right"></i>
+            </a>
         </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">Next</span></li>
-        <li class="page-item disabled"><span class="page-link">Last &raquo;</span></li>
         {% endif %}
     </ul>
 </nav>
@@ -126,7 +266,9 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Enrollment</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-graduation-cap me-2"></i>Confirm Enrollment
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -135,12 +277,13 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmEnrollBtn">Confirm Enrollment</button>
+                <button type="button" class="btn btn-primary" id="confirmEnrollBtn">
+                    <i class="fas fa-check me-2"></i>Confirm Enrollment
+                </button>
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -164,8 +307,9 @@
         confirmBtn.addEventListener('click', function () {
             if (!currentSectionId) return;
 
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Enrolling...';
+            if (window.Loading) {
+                window.Loading.show(confirmBtn, 'Enrolling...');
+            }
 
             fetch('/api/enroll/', {
                 method: 'POST',
@@ -173,26 +317,31 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({
-                    section_id: currentSectionId
-                })
+                body: JSON.stringify({ section_id: currentSectionId })
             })
                 .then(response => response.json().then(data => ({ status: response.status, body: data })))
                 .then(result => {
                     if (result.status === 201) {
-                        window.location.href = "{% url 'my-enrollments' %}";
+                        if (window.Toast) {
+                            window.Toast.success('Successfully enrolled in the course!');
+                        }
+                        setTimeout(() => {
+                            window.location.href = "{% url 'my-enrollments' %}";
+                        }, 1000);
                     } else {
                         errorDiv.textContent = result.body.error || 'Enrollment failed';
                         errorDiv.classList.remove('d-none');
-                        confirmBtn.disabled = false;
-                        confirmBtn.textContent = 'Confirm Enrollment';
+                        if (window.Loading) {
+                            window.Loading.hide(confirmBtn);
+                        }
                     }
                 })
                 .catch(error => {
                     errorDiv.textContent = 'Network error occurred';
                     errorDiv.classList.remove('d-none');
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = 'Confirm Enrollment';
+                    if (window.Loading) {
+                        window.Loading.hide(confirmBtn);
+                    }
                 });
         });
     });

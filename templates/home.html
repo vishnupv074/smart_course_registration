@@ -1,36 +1,363 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 text-center">
-        <h1 class="display-4 mb-4">Welcome to SmartReg</h1>
-        <p class="lead mb-5">
-            A demonstration of Advanced Database Management Systems concepts including ACID transactions,
-            concurrency control, and isolation levels.
-        </p>
+<style>
+    /* Hero Section */
+    .hero-section {
+        position: relative;
+        padding: 4rem 0;
+        overflow: hidden;
+        margin-bottom: 3rem;
+    }
 
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-book-open text-primary mb-3 fa-2x"></i><br>Course
-                            Catalog</h5>
-                        <p class="card-text">Browse available courses and sections for the upcoming semester.</p>
-                        <a href="{% url 'courses' %}" class="btn btn-outline-primary">View Courses</a>
-                    </div>
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .hero-buttons .btn {
+        padding: 0.875rem 2rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        height: 100%;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .feature-description {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        background: var(--primary-gradient);
+        border-radius: var(--radius-2xl);
+        padding: 3rem 2rem;
+        margin: 4rem 0;
+        color: white;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 3rem;
+        font-weight: 800;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Background Decoration */
+    .bg-decoration {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.125rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="bg-decoration">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="hero-content animate-fade-in-up">
+        <h1 class="hero-title">
+            Welcome to <span class="gradient-text">SmartReg</span>
+        </h1>
+        <p class="hero-subtitle">
+            A cutting-edge course registration system demonstrating Advanced Database Management Systems concepts
+            including ACID transactions, concurrency control, and isolation levels.
+        </p>
+        <div class="hero-buttons">
+            <a href="{% url 'courses' %}" class="btn btn-primary btn-lg hover-lift">
+                <i class="fas fa-book-open me-2"></i>Browse Courses
+            </a>
+            <a href="{% url 'adbms-dashboard' %}" class="btn btn-outline-primary btn-lg hover-lift">
+                <i class="fas fa-database me-2"></i>Explore ADBMS Demos
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Cards -->
+<div class="row g-4 mb-5 stagger-children">
+    <!-- Course Catalog -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card feature-card hover-lift">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon text-primary">
+                    <i class="fas fa-book-open"></i>
                 </div>
+                <h3 class="feature-title">Course Catalog</h3>
+                <p class="feature-description">
+                    Browse our comprehensive catalog of courses and sections. Search, filter, and find the perfect
+                    classes for your academic journey.
+                </p>
+                <a href="{% url 'courses' %}" class="btn btn-outline-primary">
+                    View Courses <i class="fas fa-arrow-right ms-2"></i>
+                </a>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fas fa-database text-success mb-3 fa-2x"></i><br>ADBMS Demos
-                        </h5>
-                        <p class="card-text">Explore database concepts like Isolation Levels and Locking.</p>
-                        <a href="{% url 'adbms-dashboard' %}" class="btn btn-outline-success">Explore Demos</a>
-                    </div>
+        </div>
+    </div>
+
+    <!-- ADBMS Demos -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card feature-card hover-lift">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon text-success">
+                    <i class="fas fa-database"></i>
                 </div>
+                <h3 class="feature-title">ADBMS Demos</h3>
+                <p class="feature-description">
+                    Explore interactive demonstrations of database concepts like isolation levels, locking mechanisms,
+                    indexing, and query optimization.
+                </p>
+                <a href="{% url 'adbms-dashboard' %}" class="btn btn-outline-success">
+                    Explore Demos <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Enrollment -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card feature-card hover-lift">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon text-info">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="feature-title">Smart Enrollment</h3>
+                <p class="feature-description">
+                    ACID-compliant enrollment with conflict detection, capacity management, and automatic waitlist
+                    handling for a seamless experience.
+                </p>
+                {% if user.is_authenticated and user.role == 'STUDENT' %}
+                <a href="{% url 'my-enrollments' %}" class="btn btn-outline-info">
+                    My Enrollments <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-info">
+                    Get Started <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Waitlist Management -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card feature-card hover-lift">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon text-warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h3 class="feature-title">Waitlist Management</h3>
+                <p class="feature-description">
+                    Automatic FIFO queue management with instant notifications when seats become available. Never miss
+                    your chance to enroll.
+                </p>
+                {% if user.is_authenticated and user.role == 'STUDENT' %}
+                <a href="{% url 'my-waitlists' %}" class="btn btn-outline-warning">
+                    My Waitlists <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-warning">
+                    Learn More <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card feature-card hover-lift">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon text-danger">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 class="feature-title">Admin Dashboard</h3>
+                <p class="feature-description">
+                    Comprehensive analytics and monitoring with real-time statistics, enrollment trends, and system
+                    health indicators.
+                </p>
+                {% if user.is_authenticated and user.role == 'ADMIN' %}
+                <a href="{% url 'admin-dashboard' %}" class="btn btn-outline-danger">
+                    View Dashboard <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-danger">
+                    Learn More <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profiles -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card feature-card hover-lift">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon" style="color: var(--secondary);">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3 class="feature-title">User Profiles</h3>
+                <p class="feature-description">
+                    Personalized profiles with avatar uploads, social media integration, and comprehensive account
+                    management features.
+                </p>
+                {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                    View Profile <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'register' %}" class="btn btn-outline-secondary">
+                    Sign Up <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<!-- Stats Section (Optional - can be populated with real data via context) -->
+<div class="stats-section animate-fade-in-up">
+    <div class="row">
+        <div class="col-md-3 col-6 mb-4 mb-md-0">
+            <div class="stat-item">
+                <span class="stat-number counter" data-target="500">0</span>
+                <span class="stat-label">Students</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-4 mb-md-0">
+            <div class="stat-item">
+                <span class="stat-number counter" data-target="50">0</span>
+                <span class="stat-label">Instructors</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-item">
+                <span class="stat-number counter" data-target="120">0</span>
+                <span class="stat-label">Courses</span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-item">
+                <span class="stat-number counter" data-target="1500">0</span>
+                <span class="stat-label">Enrollments</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Animate counters on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        const counters = document.querySelectorAll('.counter');
+
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            if (window.Utils && window.Utils.animateCounter) {
+                window.Utils.animateCounter(counter, target, 2000);
+            } else {
+                counter.textContent = target;
+            }
+        });
+    });
+</script>
 {% endblock %}

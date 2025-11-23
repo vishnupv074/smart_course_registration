@@ -2,100 +2,299 @@
 
 {% block title %}ADBMS Demos - SmartReg{% endblock %}
 
+{% block extra_css %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, var(--success) 0%, var(--secondary) 100%);
+        color: white;
+        padding: 3rem 0;
+        margin: -2rem -15px 2.5rem;
+        border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+    }
+
+    .demo-card {
+        height: 100%;
+        transition: all var(--transition-base);
+        cursor: pointer;
+        border: 2px solid var(--border-color);
+    }
+
+    .demo-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+        border-color: transparent;
+    }
+
+    .demo-card.category-isolation {
+        border-top: 4px solid var(--info);
+    }
+
+    .demo-card.category-concurrency {
+        border-top: 4px solid var(--warning);
+    }
+
+    .demo-card.category-performance {
+        border-top: 4px solid var(--primary-start);
+    }
+
+    .demo-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .demo-icon.icon-isolation {
+        background: linear-gradient(135deg, var(--info) 0%, var(--info-light) 100%);
+        color: white;
+    }
+
+    .demo-icon.icon-concurrency {
+        background: linear-gradient(135deg, var(--warning) 0%, var(--warning-light) 100%);
+        color: white;
+    }
+
+    .demo-icon.icon-performance {
+        background: var(--primary-gradient);
+        color: white;
+    }
+
+    .demo-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .demo-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-tertiary);
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .demo-description {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .category-header {
+        margin-top: 2rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .category-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        margin-right: 0.75rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2 class="mb-4"><i class="fas fa-database text-success me-2"></i>ADBMS Concepts Demonstration</h2>
+<div class="page-header text-center">
+    <div class="container">
+        <h1 class="mb-3">
+            <i class="fas fa-database me-2"></i>ADBMS Demonstrations
+        </h1>
+        <p class="mb-0 opacity-75">
+            Explore interactive demonstrations of advanced database management concepts
+        </p>
+    </div>
+</div>
+
+<!-- Isolation Levels -->
+<div class="category-header">
+    <h3>
+        <span class="category-icon"
+            style="background: linear-gradient(135deg, var(--info) 0%, var(--info-light) 100%); color: white;">
+            <i class="fas fa-layer-group"></i>
+        </span>
+        Transaction Isolation Levels
+    </h3>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <a href="{% url 'non-repeatable-read' %}" class="text-decoration-none">
+            <div class="card demo-card category-isolation hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-isolation">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h4 class="demo-title">Non-Repeatable Read</h4>
+                    <p class="demo-subtitle">Read Committed</p>
+                    <p class="demo-description">
+                        Demonstrates how reading the same row twice in a transaction yields different results if another
+                        transaction commits a change in between.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge bg-info">Isolation Level Demo</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6">
+        <a href="{% url 'phantom-read' %}" class="text-decoration-none">
+            <div class="card demo-card category-isolation hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-isolation">
+                        <i class="fas fa-ghost"></i>
+                    </div>
+                    <h4 class="demo-title">Phantom Read</h4>
+                    <p class="demo-subtitle">Repeatable Read</p>
+                    <p class="demo-description">
+                        Shows how a range query result changes if another transaction inserts a new row matching the
+                        criteria between two reads.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge bg-info">Isolation Level Demo</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Concurrency & Locking -->
+<div class="category-header">
+    <h3>
+        <span class="category-icon"
+            style="background: linear-gradient(135deg, var(--warning) 0%, var(--warning-light) 100%); color: white;">
+            <i class="fas fa-lock"></i>
+        </span>
+        Concurrency Control & Locking
+    </h3>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <a href="{% url 'row-locking' %}" class="text-decoration-none">
+            <div class="card demo-card category-concurrency hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-concurrency">
+                        <i class="fas fa-user-lock"></i>
+                    </div>
+                    <h4 class="demo-title">Row Locking</h4>
+                    <p class="demo-subtitle">SELECT FOR UPDATE</p>
+                    <p class="demo-description">
+                        Simulates concurrent updates to the same seat. Transaction A locks a section row, forcing
+                        Transaction B to wait until A completes.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge bg-warning text-dark">Locking Demo</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-6">
+        <a href="{% url 'deadlock' %}" class="text-decoration-none">
+            <div class="card demo-card category-concurrency hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-concurrency">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h4 class="demo-title">Deadlock Simulation</h4>
+                    <p class="demo-subtitle">Circular Wait</p>
+                    <p class="demo-description">
+                        Intentionally creates a deadlock between two tasks to demonstrate how PostgreSQL detects and
+                        resolves deadlock situations.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge bg-warning text-dark">Deadlock Demo</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Performance & Optimization -->
+<div class="category-header">
+    <h3>
+        <span class="category-icon" style="background: var(--primary-gradient); color: white;">
+            <i class="fas fa-tachometer-alt"></i>
+        </span>
+        Performance & Optimization
+    </h3>
+</div>
 
 <div class="row g-4">
-    <!-- Isolation Levels -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Isolation Levels</h5>
-            </div>
-            <div class="card-body">
-                <p>Simulate transaction isolation anomalies and how PostgreSQL handles them.</p>
-                <div class="list-group">
-                    <a href="{% url 'non-repeatable-read' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Non-Repeatable Read</h6>
-                            <small>Read Committed</small>
-                        </div>
-                        <small class="text-muted">Value changes between two reads in same transaction.</small>
-                    </a>
-                    <a href="{% url 'phantom-read' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Phantom Read</h6>
-                            <small>Repeatable Read</small>
-                        </div>
-                        <small class="text-muted">New rows appear between two reads.</small>
-                    </a>
+    <div class="col-md-6 col-lg-4">
+        <a href="{% url 'indexing-benchmark' %}" class="text-decoration-none">
+            <div class="card demo-card category-performance hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-performance">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h4 class="demo-title">Indexing Benchmark</h4>
+                    <p class="demo-subtitle">B-Tree vs Sequential Scan</p>
+                    <p class="demo-description">
+                        Compares query performance between indexed and non-indexed column searches using EXPLAIN
+                        ANALYZE.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge badge-gradient">Performance Demo</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
-    <!-- Concurrency Control -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">Concurrency & Locking</h5>
-            </div>
-            <div class="card-body">
-                <p>Visualize locking mechanisms and deadlock scenarios.</p>
-                <div class="list-group">
-                    <a href="{% url 'row-locking' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Row Locking</h6>
-                            <small>SELECT FOR UPDATE</small>
-                        </div>
-                        <small class="text-muted">Simulate concurrent updates to the same seat.</small>
-                    </a>
-                    <a href="{% url 'deadlock' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Deadlock Simulation</h6>
-                            <small>Circular Wait</small>
-                        </div>
-                        <small class="text-muted">Induce a deadlock between two transactions.</small>
-                    </a>
+    <div class="col-md-6 col-lg-4">
+        <a href="{% url 'query-optimization' %}" class="text-decoration-none">
+            <div class="card demo-card category-performance hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-performance">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4 class="demo-title">Query Optimizer</h4>
+                    <p class="demo-subtitle">Interactive Tool</p>
+                    <p class="demo-description">
+                        Run custom SQL queries and visualize execution plans, costs, and execution times in real-time.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge badge-gradient">Interactive Tool</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
-    <!-- Indexing -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Indexing & Performance</h5>
-            </div>
-            <div class="card-body">
-                <p>Compare query performance with and without indexes.</p>
-                <div class="list-group">
-                    <a href="{% url 'indexing-benchmark' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">B-Tree vs Seq Scan</h6>
-                            <small>EXPLAIN ANALYZE</small>
-                        </div>
-                        <small class="text-muted">Benchmark lookup by ID (Indexed) vs Description (Unindexed).</small>
-                    </a>
-                    <a href="{% url 'query-optimization' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Query Optimization Visualizer</h6>
-                            <small>Interactive Tool</small>
-                        </div>
-                        <small class="text-muted">Run custom queries and visualize execution plans.</small>
-                    </a>
-                    <a href="{% url 'partitioning-demo' %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Table Partitioning</h6>
-                            <small>Partition Pruning</small>
-                        </div>
-                        <small class="text-muted">Benchmark query performance on partitioned vs non-partitioned
-                            tables.</small>
-                    </a>
+    <div class="col-md-6 col-lg-4">
+        <a href="{% url 'partitioning-demo' %}" class="text-decoration-none">
+            <div class="card demo-card category-performance hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-performance">
+                        <i class="fas fa-th"></i>
+                    </div>
+                    <h4 class="demo-title">Table Partitioning</h4>
+                    <p class="demo-subtitle">Partition Pruning</p>
+                    <p class="demo-description">
+                        Benchmarks query performance on partitioned vs non-partitioned tables to demonstrate partition
+                        pruning benefits.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge badge-gradient">Performance Demo</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 {% endblock %}
