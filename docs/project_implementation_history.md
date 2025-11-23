@@ -60,6 +60,13 @@ The following concepts are central to the project's implementation:
     *   **Conflict Detection:** Prevents enrolling in overlapping schedules.
     *   **ACID Transactions:** Enrollment and dropping are atomic operations.
     *   **Pessimistic Locking:** Uses `select_for_update()` to prevent race conditions during enrollment.
+    *   **Waitlist Management:** 
+        *   Students automatically added to waitlist when courses are full.
+        *   FIFO (First-In-First-Out) queue ordering.
+        *   Automatic enrollment when seats become available.
+        *   Schedule conflict detection during auto-enrollment.
+        *   Email notifications for enrollment and conflicts.
+        *   Celery-based asynchronous processing.
 
 ### B. ADBMS Demonstrations
 These features are located in the `adbms_demo` app and accessible via the **ADBMS Dashboard**.
@@ -117,6 +124,16 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **Visualizations:** Chart.js-powered line chart, bar chart, and doughnut chart
     *   **Access Control:** Admin-only access with role-based permissions
     *   **Recent Activity:** Table showing last 10 enrollments
+*   **Waitlist Management:** Fully implemented waitlist system with:
+    *   **Automatic Waitlist:** Students added to waitlist when courses are full
+    *   **FIFO Processing:** First-In-First-Out queue ordering ensures fairness
+    *   **Auto-Enrollment:** Celery task automatically enrolls first student when seat opens
+    *   **Position Tracking:** Real-time waitlist position display for students
+    *   **Schedule Conflict Detection:** Prevents auto-enrollment if schedule conflicts exist
+    *   **Email Notifications:** Notifies students of enrollment or conflicts
+    *   **UI Components:** Dedicated "My Waitlists" page and integrated waitlist display
+    *   **Leave Waitlist:** Students can remove themselves from waitlist
+    *   **ACID Compliance:** All operations use atomic transactions with pessimistic locking
 *   **Documentation:** Updated `README.md`, `walkthrough.md`, and `adbms_concepts.md`.
 *   **Verification:** Verified Partitioning Demo with performance benchmarks (1.78ms vs 0.75ms).
 
@@ -128,8 +145,9 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 *   **[DONE] Admin Dashboard:** Fully implemented with analytics, statistics, system health monitoring, and Chart.js visualizations.
 
 ### Enhanced Course Registration Features
+*   **[DONE] Waitlist Management:** Fully implemented with FIFO queue, automatic enrollment, and schedule conflict detection.
 *   **UI/UX Improvements:** Modernize the interface with better styling, interactive elements, and responsive design.
-*   **Advanced Functionality:** Waitlist management, course prerequisites, and bulk operations.
+*   **Advanced Functionality:** Course prerequisites and bulk operations.
 
 ### Remaining ADBMS Concepts
 *   **Normalization vs Denormalization:** Implement materialized views for analytics (e.g., "Average GPA per Course").

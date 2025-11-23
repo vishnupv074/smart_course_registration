@@ -25,6 +25,8 @@ A Django-based Course Registration System designed to demonstrate Advanced DBMS 
     -   **ACID Compliance**: Atomic enrollment transactions with capacity checks.
     -   **Conflict Detection**: Prevents scheduling conflicts.
     -   **Concurrency Control**: Pessimistic locking to prevent race conditions.
+    -   **Waitlist Management**: Automatic FIFO queue when courses are full with auto-enrollment when seats open.
+
 
 ### ADBMS Demonstrations
 Interactive tools to visualize advanced database concepts:

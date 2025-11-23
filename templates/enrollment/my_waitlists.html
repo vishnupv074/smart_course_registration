@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}My Waitlists - SmartReg{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="fas fa-clock text-warning me-2"></i>My Waitlists</h2>
+    <div>
+        <a href="{% url 'my-enrollments' %}" class="btn btn-outline-primary me-2">
+            <i class="fas fa-graduation-cap"></i> My Enrollments
+        </a>
+        <a href="{% url 'courses' %}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Browse Courses
+        </a>
+    </div>
+</div>
+
+{% if waitlist_data %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> You will be automatically enrolled when a seat becomes available. Waitlist is
+    processed in FIFO (First-In-First-Out) order.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Section</th>
+                        <th>Instructor</th>
+                        <th>Schedule</th>
+                        <th>Room</th>
+                        <th>Joined At</th>
+                        <th>Position</th>
+                        <th>Total in Waitlist</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in waitlist_data %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.waitlist.section.course.code }}</strong><br>
+                            <small>{{ item.waitlist.section.course.title }}</small>
+                        </td>
+                        <td>{{ item.waitlist.section.semester }}<br><small>Sec {{ item.waitlist.section.id }}</small>
+                        </td>
+                        <td>
+                            {% if item.waitlist.section.instructor.get_full_name %}
+                            {{ item.waitlist.section.instructor.get_full_name }}
+                            {% else %}
+                            {{ item.waitlist.section.instructor.username }}
+                            {% endif %}
+                        </td>
+                        <td>{{ item.waitlist.section.schedule }}</td>
+                        <td>{{ item.waitlist.section.room_number }}</td>
+                        <td>{{ item.waitlist.joined_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <span class="badge bg-warning text-dark fs-6">
+                                #{{ item.position }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ item.total }} student{{ item.total|pluralize }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger leave-waitlist-btn"
+                                data-waitlist-id="{{ item.waitlist.id }}"
+                                data-course-code="{{ item.waitlist.section.course.code }}">
+                                <i class="fas fa-times"></i> Leave
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h5>What happens next?</h5>
+    <ul>
+        <li>When a student drops the course, the first person in the waitlist will be automatically enrolled.</li>
+        <li>You will receive an email notification when you are enrolled.</li>
+        <li>Your position in the waitlist may change as other students leave the waitlist.</li>
+        <li>You can leave the waitlist at any time by clicking the "Leave" button.</li>
+    </ul>
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> You are not in any waitlists. When you try to enroll in a full course, you will
+    be automatically added to the waitlist.
+</div>
+<div class="text-center mt-4">
+    <a href="{% url 'courses' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-search"></i> Browse Courses
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const leaveWaitlistBtns = document.querySelectorAll('.leave-waitlist-btn');
+
+        leaveWaitlistBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const waitlistId = this.dataset.waitlistId;
+                const courseCode = this.dataset.courseCode;
+
+                if (confirm(`Are you sure you want to leave the waitlist for ${courseCode}?\n\nYou will lose your position (#${this.closest('tr').querySelector('.badge.bg-warning').textContent.trim()}) in the waitlist.`)) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Leaving...';
+
+                    fetch(`/api/waitlist/leave/${waitlistId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                // Show success message and reload
+                                alert('Successfully left the waitlist!');
+                                window.location.reload();
+                            } else {
+                                alert(data.message || 'Failed to leave waitlist');
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="fas fa-times"></i> Leave';
+                            }
+                        })
+                        .catch(error => {
+                            alert('Network error occurred. Please try again.');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-times"></i> Leave';
+                        });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

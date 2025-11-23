@@ -6,26 +6,29 @@ from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .models import Enrollment
-from .serializers import EnrollmentSerializer
+from .models import Enrollment, Waitlist
+from .serializers import EnrollmentSerializer, WaitlistSerializer
 from courses.models import Section
+from .tasks import process_waitlist
 
 @login_required
 def my_enrollments(request):
     """
     Displays the list of courses the current student is enrolled in.
-    Includes instructor details and drop functionality.
+    Includes instructor details, drop functionality, and waitlist entries.
     """
     enrollments = Enrollment.objects.filter(student=request.user).select_related('section', 'section__course', 'section__instructor')
+    waitlists = Waitlist.objects.filter(student=request.user).select_related('section', 'section__course', 'section__instructor')
     context = {
-        'enrollments': enrollments
+        'enrollments': enrollments,
+        'waitlists': waitlists,
     }
     return render(request, 'enrollment/my_enrollments.html', context)
 
 @login_required
 @require_POST
 def drop_course(request, section_id):
-    """Drop a course (unenroll) with ACID transaction"""
+    """Drop a course (unenroll) with ACID transaction and trigger waitlist processing"""
     try:
         with transaction.atomic():
             # Get enrollment and lock it
@@ -38,7 +41,10 @@ def drop_course(request, section_id):
             # Delete enrollment
             enrollment.delete()
             
-            return JsonResponse({'status': 'success', 'message': 'Successfully dropped course'})
+        # Trigger waitlist processing asynchronously (outside transaction)
+        process_waitlist.delay(section_id)
+        
+        return JsonResponse({'status': 'success', 'message': 'Successfully dropped course'})
             
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
@@ -115,14 +121,24 @@ class EnrollStudentView(views.APIView):
                 # Lock the section to prevent race conditions
                 section = Section.objects.select_for_update().get(id=section_id)
                 
-                # Check capacity
-                current_enrollment = Enrollment.objects.filter(section=section).count()
-                if current_enrollment >= section.capacity:
-                    return Response({'error': 'Section is full'}, status=status.HTTP_400_BAD_REQUEST)
-
                 # Check if already enrolled
                 if Enrollment.objects.filter(student=request.user, section=section).exists():
                     return Response({'error': 'Already enrolled in this section'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Check if already in waitlist
+                if Waitlist.objects.filter(student=request.user, section=section).exists():
+                    return Response({'error': 'Already in waitlist for this section'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Check capacity
+                current_enrollment = Enrollment.objects.filter(section=section).count()
+                if current_enrollment >= section.capacity:
+                    # Section is full - add to waitlist
+                    Waitlist.objects.create(student=request.user, section=section)
+                    waitlist_position = Waitlist.objects.filter(section=section).count()
+                    return Response({
+                        'status': 'waitlisted',
+                        'message': f'Section is full. You have been added to the waitlist at position {waitlist_position}.'
+                    }, status=status.HTTP_201_CREATED)
                 
                 # Check for schedule conflicts
                 new_schedule = self.parse_schedule(section.schedule)
@@ -148,3 +164,62 @@ class EnrollStudentView(views.APIView):
             return Response({'error': 'Section not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@login_required
+def my_waitlists(request):
+    """
+    Displays the list of courses the current student is waitlisted for.
+    Shows waitlist position and allows leaving the waitlist.
+    """
+    waitlists = Waitlist.objects.filter(student=request.user).select_related(
+        'section', 'section__course', 'section__instructor'
+    )
+    
+    # Add position to each waitlist entry
+    waitlist_data = []
+    for waitlist in waitlists:
+        waitlist_data.append({
+            'waitlist': waitlist,
+            'position': waitlist.get_position(),
+            'total': Waitlist.objects.filter(section=waitlist.section).count()
+        })
+    
+    context = {
+        'waitlist_data': waitlist_data
+    }
+    return render(request, 'enrollment/my_waitlists.html', context)
+
+
+@login_required
+@require_POST
+def leave_waitlist(request, waitlist_id):
+    """Remove student from waitlist"""
+    try:
+        with transaction.atomic():
+            waitlist = get_object_or_404(
+                Waitlist.objects.select_for_update(),
+                id=waitlist_id,
+                student=request.user
+            )
+            waitlist.delete()
+            
+        return JsonResponse({'status': 'success', 'message': 'Successfully left waitlist'})
+        
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+class WaitlistViewSet(viewsets.ReadOnlyModelViewSet):
+    """API ViewSet for waitlist entries"""
+    serializer_class = WaitlistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'STUDENT':
+            return Waitlist.objects.filter(student=user)
+        elif user.role == 'INSTRUCTOR':
+            return Waitlist.objects.filter(section__instructor=user)
+        return Waitlist.objects.all()
+

@@ -76,6 +76,67 @@
 </div>
 {% endif %}
 
+<!-- Waitlist Section -->
+{% if waitlists %}
+<div class="mt-5">
+    <h3 class="mb-3"><i class="fas fa-clock text-warning me-2"></i>My Waitlists</h3>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Section</th>
+                            <th>Instructor</th>
+                            <th>Schedule</th>
+                            <th>Room</th>
+                            <th>Joined At</th>
+                            <th>Position</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for waitlist in waitlists %}
+                        <tr>
+                            <td>
+                                <strong>{{ waitlist.section.course.code }}</strong><br>
+                                {{ waitlist.section.course.title }}
+                            </td>
+                            <td>{{ waitlist.section.semester }} (Sec {{ waitlist.section.id }})</td>
+                            <td>
+                                {% if waitlist.section.instructor.get_full_name %}
+                                {{ waitlist.section.instructor.get_full_name }}
+                                {% else %}
+                                {{ waitlist.section.instructor.username }}
+                                {% endif %}
+                            </td>
+                            <td>{{ waitlist.section.schedule }}</td>
+                            <td>{{ waitlist.section.room_number }}</td>
+                            <td>{{ waitlist.joined_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-warning text-dark">
+                                    #{{ waitlist.get_position }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger leave-waitlist-btn"
+                                    data-waitlist-id="{{ waitlist.id }}"
+                                    data-course-code="{{ waitlist.section.course.code }}">
+                                    Leave Waitlist
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
 <!-- Drop Course Modal -->
 <div class="modal fade" id="dropModal" tabindex="-1">
     <div class="modal-dialog">
@@ -101,26 +162,27 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Drop Course functionality
         const dropBtns = document.querySelectorAll('.drop-btn');
-        const modal = new bootstrap.Modal(document.getElementById('dropModal'));
-        const confirmBtn = document.getElementById('confirmDropBtn');
-        const errorDiv = document.getElementById('dropError');
+        const dropModal = new bootstrap.Modal(document.getElementById('dropModal'));
+        const confirmDropBtn = document.getElementById('confirmDropBtn');
+        const dropErrorDiv = document.getElementById('dropError');
         let currentSectionId = null;
 
         dropBtns.forEach(btn => {
             btn.addEventListener('click', function () {
                 currentSectionId = this.dataset.sectionId;
                 document.getElementById('dropCourseCode').textContent = this.dataset.courseCode;
-                errorDiv.classList.add('d-none');
-                modal.show();
+                dropErrorDiv.classList.add('d-none');
+                dropModal.show();
             });
         });
 
-        confirmBtn.addEventListener('click', function () {
+        confirmDropBtn.addEventListener('click', function () {
             if (!currentSectionId) return;
 
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Dropping...';
+            confirmDropBtn.disabled = true;
+            confirmDropBtn.textContent = 'Dropping...';
 
             fetch(`/api/drop/${currentSectionId}/`, {
                 method: 'POST',
@@ -134,18 +196,56 @@
                     if (data.status === 'success') {
                         window.location.reload();
                     } else {
-                        errorDiv.textContent = data.message || 'Drop failed';
-                        errorDiv.classList.remove('d-none');
-                        confirmBtn.disabled = false;
-                        confirmBtn.textContent = 'Drop Course';
+                        dropErrorDiv.textContent = data.message || 'Drop failed';
+                        dropErrorDiv.classList.remove('d-none');
+                        confirmDropBtn.disabled = false;
+                        confirmDropBtn.textContent = 'Drop Course';
                     }
                 })
                 .catch(error => {
-                    errorDiv.textContent = 'Network error occurred';
-                    errorDiv.classList.remove('d-none');
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = 'Drop Course';
+                    dropErrorDiv.textContent = 'Network error occurred';
+                    dropErrorDiv.classList.remove('d-none');
+                    confirmDropBtn.disabled = false;
+                    confirmDropBtn.textContent = 'Drop Course';
                 });
+        });
+
+        // Leave Waitlist functionality
+        const leaveWaitlistBtns = document.querySelectorAll('.leave-waitlist-btn');
+
+        leaveWaitlistBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const waitlistId = this.dataset.waitlistId;
+                const courseCode = this.dataset.courseCode;
+
+                if (confirm(`Are you sure you want to leave the waitlist for ${courseCode}?`)) {
+                    btn.disabled = true;
+                    btn.textContent = 'Leaving...';
+
+                    fetch(`/api/waitlist/leave/${waitlistId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                window.location.reload();
+                            } else {
+                                alert(data.message || 'Failed to leave waitlist');
+                                btn.disabled = false;
+                                btn.textContent = 'Leave Waitlist';
+                            }
+                        })
+                        .catch(error => {
+                            alert('Network error occurred');
+                            btn.disabled = false;
+                            btn.textContent = 'Leave Waitlist';
+                        });
+                }
+            });
         });
     });
 </script>
