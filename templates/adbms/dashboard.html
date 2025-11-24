@@ -167,6 +167,27 @@
             </div>
         </a>
     </div>
+
+    <div class="col-md-6">
+        <a href="{% url 'mvcc-visibility' %}" class="text-decoration-none">
+            <div class="card demo-card category-isolation hover-lift">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-isolation">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <h4 class="demo-title">MVCC & Visibility</h4>
+                    <p class="demo-subtitle">Row Versioning</p>
+                    <p class="demo-description">
+                        Demonstrates PostgreSQL's Multi-Version Concurrency Control and how transactions see consistent
+                        snapshots through row versioning with system columns (xmin, xmax, ctid).
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge bg-info">Isolation Level Demo</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
 </div>
 
 <!-- Concurrency & Locking -->

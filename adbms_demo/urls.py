@@ -12,4 +12,5 @@ urlpatterns = [
     path('row-locking/', views.row_locking_demo, name='row-locking'),
     path('triggers/', views.trigger_demo, name='trigger-demo'),
     path('normalization/', views.normalization_demo, name='normalization-demo'),
+    path('mvcc-visibility/', views.mvcc_visibility_demo, name='mvcc-visibility'),
 ]

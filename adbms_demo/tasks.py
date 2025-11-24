@@ -126,3 +126,60 @@ def attempt_booking_task(section_id, delay=1):
                 return "Booking Failed: No seats left (Transaction B)"
     except Exception as e:
         return f"Booking Failed: {str(e)}"
+
+
+@shared_task
+def mvcc_update_section_task(section_id, new_capacity, delay=1):
+    """
+    Updates a section's capacity in a new transaction for MVCC demonstration.
+    Returns transaction metadata to show row versioning.
+    
+    Args:
+        section_id (int): ID of the section to update.
+        new_capacity (int): The new capacity value.
+        delay (int): Seconds to wait before updating.
+    
+    Returns:
+        dict: Contains transaction ID, old/new capacity, and timing info.
+    """
+    from django.db import connection
+    
+    time.sleep(delay)
+    try:
+        with transaction.atomic():
+            # Update the section
+            section = Section.objects.get(id=section_id)
+            old_capacity = section.capacity
+            section.capacity = new_capacity
+            section.save()
+            
+            # Get transaction ID and row version info
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT xmin, xmax, ctid 
+                    FROM courses_section 
+                    WHERE id = %s
+                """, [section_id])
+                row = cursor.fetchone()
+                xmin, xmax, ctid = row if row else (None, None, None)
+            
+            return {
+                'success': True,
+                'section_id': section_id,
+                'old_capacity': old_capacity,
+                'new_capacity': new_capacity,
+                'xmin': str(xmin),
+                'xmax': str(xmax),
+                'ctid': str(ctid),
+                'message': f'Updated section {section_id} from {old_capacity} to {new_capacity}'
+            }
+    except Section.DoesNotExist:
+        return {
+            'success': False,
+            'error': f'Section {section_id} not found'
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }

@@ -157,6 +157,15 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **UI Template:** Created `normalization_result.html` with side-by-side comparison cards and performance metrics
     *   **Dashboard Integration:** Added demo card to ADBMS dashboard
     *   **Documentation:** Created comprehensive guide at `docs/normalization_vs_denormalization.md` (9.5KB)
+*   **MVCC & Visibility:** Fully implemented demonstration of PostgreSQL's Multi-Version Concurrency Control with:
+    *   **Row Versioning:** Shows how PostgreSQL maintains multiple versions of the same row simultaneously
+    *   **System Columns:** Visualizes xmin (creator transaction ID), xmax (deleter transaction ID), and ctid (physical location)
+    *   **Snapshot Isolation:** Demonstrates how Transaction A sees a consistent snapshot even after Transaction B commits changes
+    *   **Celery Task:** Background task `mvcc_update_section_task` updates section and returns transaction metadata
+    *   **Demo View:** `mvcc_visibility_demo` orchestrates concurrent transactions and captures row version information
+    *   **UI Template:** Created `mvcc_result.html` with execution timeline and row version comparison cards
+    *   **Dashboard Integration:** Added demo card to ADBMS dashboard in Transaction Isolation Levels section
+    *   **Documentation:** Created comprehensive guide at `docs/mvcc_and_visibility.md` covering theory, implementation, visibility rules, VACUUM, and monitoring
 
 ## 7. Pending / Next Steps
 
@@ -188,7 +197,7 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **PL/pgSQL Functions:** 4 dedicated functions to capture changes and insert audit records.
     *   **Demo Interface:** Interactive dashboard to perform CRUD operations and view real-time audit logs.
     *   **Documentation:** Added detailed concept explanation and comparison with application-level auditing.
-*   **MVCC & Visibility:** Demonstrate Postgres versioning and visibility rules.
+*   **[DONE] MVCC & Visibility:** Demonstrated PostgreSQL's Multi-Version Concurrency Control with row versioning, system columns (xmin, xmax, ctid), and snapshot isolation.
 *   **Replication / HA:** Simulate read replica setup and consistency tradeoffs.
 *   **Backup & Restore:** Demonstrate `pg_dump` and `pg_restore` workflows.
 *   **Monitoring & Statistics:** Visualize `pg_stat_statements` and query latency histograms.
