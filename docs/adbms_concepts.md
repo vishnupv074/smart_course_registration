@@ -96,3 +96,72 @@ $$ LANGUAGE plpgsql;
 - **Audit Logging**: When you need a guaranteed audit trail for compliance.
 - **Data Integrity**: Enforcing complex constraints across tables.
 - **Denormalization**: Automatically updating summary tables (e.g., incrementing a counter).
+
+---
+
+## 6. Normalization vs Denormalization
+
+### Concept
+**Normalization** organizes data to reduce redundancy and improve integrity, while **Denormalization** adds redundancy to improve read performance by reducing or eliminating joins.
+
+### The Tradeoff
+
+| Aspect | Normalized | Denormalized |
+| :--- | :--- | :--- |
+| **Storage** | Minimal (no redundancy) | Higher (duplicate data) |
+| **Read Performance** | Slower (requires joins) | Faster (no joins needed) |
+| **Write Performance** | Faster (single location) | Slower (multiple locations) |
+| **Data Integrity** | High (single source of truth) | Risk of inconsistency |
+| **Maintenance** | Easier updates | Requires refresh strategy |
+| **Use Case** | OLTP (transactions) | OLAP (analytics) |
+
+### Implementation: Materialized Views
+
+We use **PostgreSQL Materialized Views** to demonstrate denormalization:
+
+```sql
+CREATE MATERIALIZED VIEW adbms_demo_materialized_enrollment AS
+SELECT
+    row_number() OVER () AS id,
+    u.username as student_name,
+    c.code as course_code,
+    c.title as course_title,
+    s.semester as semester,
+    e.grade as grade,
+    c.credits as credits
+FROM enrollment_enrollment e
+JOIN users_user u ON e.student_id = u.id
+JOIN courses_section s ON e.section_id = s.id
+JOIN courses_course c ON s.course_id = c.id;
+```
+
+### Performance Results
+
+| Approach | Execution Time | Operations | Improvement |
+| :--- | :--- | :--- | :--- |
+| **Normalized** | ~0.275ms | 3 JOINs + filtering | Baseline |
+| **Denormalized** | ~0.02ms | Simple table scan | **13.75x faster** |
+
+### Key Benefits
+- **Pre-computed Joins**: Data already combined and stored physically
+- **Sequential Reads**: All related data stored together
+- **Reduced I/O**: Fewer disk seeks and page reads
+- **Simpler Query Plans**: No complex join operations
+
+### Refresh Strategies
+```sql
+-- Manual refresh
+REFRESH MATERIALIZED VIEW adbms_demo_materialized_enrollment;
+
+-- Concurrent refresh (non-blocking)
+REFRESH MATERIALIZED VIEW CONCURRENTLY adbms_demo_materialized_enrollment;
+```
+
+### When to Use Materialized Views?
+- Analytics and reporting queries
+- Read-heavy workloads
+- Complex aggregations
+- Data that changes infrequently
+- When you can tolerate slightly stale data
+
+For detailed explanation, see [Normalization vs Denormalization Guide](normalization_vs_denormalization.md).

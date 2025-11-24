@@ -148,6 +148,15 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **Accessibility:** Semantic HTML, ARIA labels, keyboard navigation, reduced motion support, WCAG AA color contrast
 *   **Documentation:** Updated `README.md`, `walkthrough.md`, `adbms_concepts.md`, and `project_implementation_history.md`.
 *   **Verification:** Verified Partitioning Demo with performance benchmarks (1.78ms vs 0.75ms).
+*   **Normalization vs Denormalization:** Fully implemented materialized views demo with:
+    *   **Materialized View:** Created `adbms_demo_materialized_enrollment` view that pre-joins enrollment, user, section, and course tables
+    *   **Django Model:** Added `DenormalizedEnrollment` model to map to the materialized view
+    *   **Migration:** Custom SQL migration to create and drop the materialized view
+    *   **Demo View:** Implemented `normalization_demo` view comparing normalized (3 JOINs) vs denormalized (simple scan) queries
+    *   **Performance Results:** Demonstrated 13.75x performance improvement (0.275ms → 0.02ms)
+    *   **UI Template:** Created `normalization_result.html` with side-by-side comparison cards and performance metrics
+    *   **Dashboard Integration:** Added demo card to ADBMS dashboard
+    *   **Documentation:** Created comprehensive guide at `docs/normalization_vs_denormalization.md` (9.5KB)
 
 ## 7. Pending / Next Steps
 
@@ -155,6 +164,7 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 *   **[DONE] Verify Partitioning Demo:** Verified that the demo works as expected and shows performance gains (Partition Pruning).
 *   **[DONE] User Profile:** Fully implemented with profile pictures, additional fields, social media links, password change, and email verification.
 *   **[DONE] Admin Dashboard:** Fully implemented with analytics, statistics, system health monitoring, and Chart.js visualizations.
+*   **[DONE] Normalization vs Denormalization:** Fully implemented with materialized views and 13.75x performance improvement demonstration.
 
 ### Enhanced Course Registration Features
 *   **[DONE] Waitlist Management:** Fully implemented with FIFO queue, automatic enrollment, and schedule conflict detection.
@@ -172,7 +182,7 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
 *   **Optimization:** Minify CSS/JS for production, implement lazy loading, add service worker for PWA support.
 
 ### Remaining ADBMS Concepts
-*   **Normalization vs Denormalization:** Implement materialized views for analytics (e.g., "Average GPA per Course").
+*   **[DONE] Normalization vs Denormalization:** Implemented materialized views for analytics with 13.75x performance gain.
 *   **[DONE] Triggers & Stored Procedures:** Implemented PL/pgSQL triggers for automatic audit logging on Enrollment, Course, Section, and Waitlist tables.
     *   **AuditLog Model:** Tracks operation type, record ID, old/new data (JSON), and change summary.
     *   **PL/pgSQL Functions:** 4 dedicated functions to capture changes and insert audit records.

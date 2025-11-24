@@ -87,3 +87,20 @@ class AuditLog(models.Model):
     def __str__(self):
         return f"{self.operation} on {self.table_name} (ID: {self.record_id}) at {self.changed_at}"
 
+
+class DenormalizedEnrollment(models.Model):
+    """
+    Materialized View for analytics - denormalized enrollment data.
+    """
+    id = models.BigIntegerField(primary_key=True)
+    student_name = models.CharField(max_length=150)
+    course_code = models.CharField(max_length=20)
+    course_title = models.CharField(max_length=200)
+    semester = models.CharField(max_length=20)
+    grade = models.CharField(max_length=2, blank=True, null=True)
+    credits = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'adbms_demo_materialized_enrollment'
+

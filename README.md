@@ -49,6 +49,9 @@ Interactive tools to visualize advanced database concepts:
 -   **Indexing**: Benchmark performance of B-Tree indexes vs Sequential Scans.
 -   **Query Optimization**: Visualizer for `EXPLAIN ANALYZE` to analyze query costs and execution plans.
 -   **Table Partitioning**: Benchmark performance of Partitioned vs Non-Partitioned tables (Partition Pruning).
+-   **Triggers & Stored Procedures**: Automatic audit logging using PL/pgSQL triggers.
+-   **Normalization vs Denormalization**: Compare query performance between normalized tables (with joins) and denormalized materialized views (13.75x faster).
+
 
 ## Quick Start
 

@@ -5,7 +5,7 @@ import time
 from courses.models import Section
 from enrollment.models import Enrollment
 from .tasks import update_section_capacity, insert_enrollment, deadlock_task_a, deadlock_task_b, attempt_booking_task
-from .models import NonPartitionedEnrollment, PartitionedEnrollment
+from .models import NonPartitionedEnrollment, PartitionedEnrollment, DenormalizedEnrollment
 import random
 
 def dashboard(request):
@@ -654,3 +654,76 @@ def trigger_demo(request):
         'logs': logs,
         'stats': stats
     })
+
+
+def normalization_demo(request):
+    """
+    Demonstrates Normalization vs Denormalization (Materialized Views).
+    
+    THEORY:
+    Normalized databases reduce redundancy but require joins for complex queries.
+    Denormalized data (via materialized views) trades storage for query performance.
+    
+    SIMULATION STEPS:
+    1. Query normalized tables with 3 joins (enrollment -> user, section, course).
+    2. Query denormalized materialized view (pre-joined data).
+    3. Compare execution times using EXPLAIN ANALYZE.
+    """
+    results = {
+        'demo_name': 'Normalization vs Denormalization',
+        'scenarios': []
+    }
+
+    # Scenario 1: Normalized Query (Multiple Joins)
+    target_semester = 'Fall 2024'
+    
+    query_normalized = """
+        SELECT 
+            u.username, c.code, c.title, s.semester, e.grade, c.credits
+        FROM 
+            enrollment_enrollment e
+        JOIN 
+            users_user u ON e.student_id = u.id
+        JOIN 
+            courses_section s ON e.section_id = s.id
+        JOIN 
+            courses_course c ON s.course_id = c.id
+        WHERE 
+            s.semester = %s
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query_normalized, [target_semester])
+        explain_output = cursor.fetchone()[0][0]
+        
+        results['scenarios'].append({
+            'name': 'Normalized (3 Joins)',
+            'query': "SELECT ... FROM enrollment JOIN user JOIN section JOIN course WHERE semester = ...",
+            'execution_time': round(explain_output['Execution Time'], 3),
+            'plan': explain_output['Plan']['Node Type'],
+            'details': explain_output
+        })
+
+    # Scenario 2: Denormalized Query (Materialized View)
+    query_denormalized = """
+        SELECT 
+            student_name, course_code, course_title, semester, grade, credits
+        FROM 
+            adbms_demo_materialized_enrollment
+        WHERE 
+            semester = %s
+    """
+    
+    with connection.cursor() as cursor:
+        cursor.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query_denormalized, [target_semester])
+        explain_output = cursor.fetchone()[0][0]
+        
+        results['scenarios'].append({
+            'name': 'Denormalized (Materialized View)',
+            'query': "SELECT ... FROM materialized_enrollment WHERE semester = ...",
+            'execution_time': round(explain_output['Execution Time'], 3),
+            'plan': explain_output['Plan']['Node Type'],
+            'details': explain_output
+        })
+
+    return render(request, 'adbms/normalization_result.html', {'results': results})

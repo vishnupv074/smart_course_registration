@@ -11,4 +11,5 @@ urlpatterns = [
     path('partitioning/', views.partitioning_demo, name='partitioning-demo'),
     path('row-locking/', views.row_locking_demo, name='row-locking'),
     path('triggers/', views.trigger_demo, name='trigger-demo'),
+    path('normalization/', views.normalization_demo, name='normalization-demo'),
 ]

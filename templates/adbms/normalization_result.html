@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Normalization vs Denormalization - SmartReg{% endblock %}
+
+{% block content %}
+<style>
+    .comparison-card {
+        transition: all var(--transition-fast);
+        height: 100%;
+    }
+
+    .comparison-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .performance-bar {
+        height: 12px;
+        border-radius: var(--radius-full);
+        background: var(--bg-tertiary);
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .performance-fill {
+        height: 100%;
+        background: var(--primary-gradient);
+        border-radius: var(--radius-full);
+        transition: width 1s ease;
+    }
+
+    .improvement-badge {
+        font-size: 2rem;
+        font-weight: 800;
+        background: var(--success-gradient);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: var(--radius-xl);
+        display: inline-block;
+        animation: bounceIn 0.8s ease;
+    }
+
+    @keyframes bounceIn {
+        0% {
+            transform: scale(0);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-header" style="background: var(--primary-gradient); color: white; border: none;">
+                <h4 class="mb-0" style="color: white; font-weight: 700;">
+                    <i class="fas fa-database"></i> {{ results.demo_name }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0">
+                    <i class="fas fa-info-circle"></i> Comparing query performance: Normalized tables (with joins) vs
+                    Denormalized data (materialized view)
+                </p>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            {% for scenario in results.scenarios %}
+            <div class="col-md-6 mb-3">
+                <div class="card comparison-card"
+                    style="border-left: 4px solid {% if forloop.first %}var(--warning){% else %}var(--success){% endif %};">
+                    <div class="card-body">
+                        <h5 class="mb-3">
+                            <i
+                                class="fas {% if forloop.first %}fa-project-diagram{% else %}fa-bolt{% endif %} {% if forloop.first %}text-warning{% else %}text-success{% endif %}"></i>
+                            {{ scenario.name }}
+                        </h5>
+                        <div class="mb-3">
+                            <strong><i class="fas fa-clock"></i> Execution Time:</strong><br>
+                            <span class="{% if forloop.first %}text-warning{% else %}text-success{% endif %}"
+                                style="font-size: 1.5rem; font-weight: 700;">
+                                {{ scenario.execution_time }}ms
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <strong><i class="fas fa-sitemap"></i> Query Plan:</strong><br>
+                            <code>{{ scenario.plan }}</code>
+                        </div>
+                        {% if forloop.first %}
+                        <div class="performance-bar">
+                            <div class="performance-fill"
+                                style="width: 100%; background: linear-gradient(90deg, var(--warning) 0%, var(--warning-light) 100%);">
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-link"></i> Multiple table joins required
+                        </small>
+                        {% else %}
+                        {% widthratio scenario.execution_time results.scenarios.0.execution_time 100 as percent %}
+                        <div class="performance-bar">
+                            <div class="performance-fill"
+                                style="width: {{ percent }}%; background: var(--success-gradient);"></div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-rocket"></i> Pre-computed denormalized data
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if results.scenarios|length == 2 %}
+        {% with normalized=results.scenarios.0.execution_time denormalized=results.scenarios.1.execution_time %}
+        {% if normalized > denormalized %}
+        {% widthratio normalized denormalized 100 as improvement_ratio %}
+        {% with improvement=improvement_ratio|add:"-100" %}
+        <div class="card"
+            style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(110, 231, 183, 0.1) 100%); border-left: 4px solid var(--success);">
+            <div class="card-body text-center py-5">
+                <h5 class="mb-3"><i class="fas fa-chart-line"></i> Performance Improvement</h5>
+                <div class="improvement-badge">
+                    <i class="fas fa-rocket"></i> {{ improvement }}% Faster
+                </div>
+                <p class="text-muted mt-3 mb-0">
+                    Materialized views significantly improve query performance by pre-computing joins and storing
+                    denormalized data.
+                </p>
+            </div>
+        </div>
+        {% endwith %}
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{% url 'adbms-dashboard' %}" class="btn btn-secondary hover-lift">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
