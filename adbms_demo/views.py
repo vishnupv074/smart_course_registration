@@ -893,3 +893,192 @@ def mvcc_visibility_demo(request):
 
     return render(request, 'adbms/mvcc_result.html', {'results': results})
 
+
+def monitoring_stats_demo(request):
+    """
+    Demonstrates Database Monitoring & Statistics using pg_stat_statements.
+    
+    THEORY:
+    pg_stat_statements is a PostgreSQL extension that tracks execution statistics for all SQL statements.
+    It provides insights into query performance, helping identify slow queries and optimization opportunities.
+    
+    Key Metrics:
+    - total_exec_time: Total time spent executing this query
+    - calls: Number of times the query was executed
+    - mean_exec_time: Average execution time per call
+    - rows: Total number of rows returned/affected
+    
+    SIMULATION STEPS:
+    1. Query pg_stat_statements to get top queries by execution time.
+    2. Calculate performance metrics and latency distribution.
+    3. Optionally execute sample workload to generate statistics.
+    4. Visualize results with charts and tables.
+    """
+    from django.db.models import Count
+    import json
+    
+    results = {
+        'demo_name': 'Monitoring & Statistics',
+        'description': 'PostgreSQL query performance monitoring using pg_stat_statements extension. Tracks execution time, call frequency, and resource usage for all database queries.',
+        'top_queries': [],
+        'metrics': {},
+        'latency_histogram': {},
+        'error': None
+    }
+    
+    try:
+        # Check if pg_stat_statements is available
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'
+                );
+            """)
+            extension_exists = cursor.fetchone()[0]
+            
+            if not extension_exists:
+                results['error'] = "pg_stat_statements extension is not enabled. Please run migrations to enable it."
+                return render(request, 'adbms/monitoring_result.html', {'results': results})
+        
+        # Generate sample workload if no statistics exist
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) FROM pg_stat_statements;")
+            stats_count = cursor.fetchone()[0]
+            
+            if stats_count < 5:
+                # Execute some sample queries to generate statistics
+                cursor.execute("SELECT COUNT(*) FROM courses_course;")
+                cursor.execute("SELECT COUNT(*) FROM courses_section;")
+                cursor.execute("SELECT COUNT(*) FROM enrollment_enrollment;")
+                cursor.execute("SELECT COUNT(*) FROM users_user WHERE role = 'STUDENT';")
+                cursor.execute("""
+                    SELECT c.code, COUNT(e.id) 
+                    FROM courses_course c 
+                    LEFT JOIN courses_section s ON c.id = s.course_id 
+                    LEFT JOIN enrollment_enrollment e ON s.id = e.section_id 
+                    GROUP BY c.code;
+                """)
+        
+        # Query top queries by total execution time
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    query,
+                    calls,
+                    total_exec_time,
+                    mean_exec_time,
+                    min_exec_time,
+                    max_exec_time,
+                    stddev_exec_time,
+                    rows
+                FROM pg_stat_statements
+                WHERE query NOT LIKE '%pg_stat_statements%'
+                    AND query NOT LIKE '%pg_extension%'
+                ORDER BY total_exec_time DESC
+                LIMIT 15;
+            """)
+            
+            rows = cursor.fetchall()
+            for row in rows:
+                query, calls, total_time, mean_time, min_time, max_time, stddev_time, num_rows = row
+                
+                # Truncate long queries for display
+                display_query = query[:200] + '...' if len(query) > 200 else query
+                
+                results['top_queries'].append({
+                    'query': display_query,
+                    'full_query': query,
+                    'calls': calls,
+                    'total_time': round(total_time, 3),
+                    'mean_time': round(mean_time, 3),
+                    'min_time': round(min_time, 3),
+                    'max_time': round(max_time, 3),
+                    'stddev_time': round(stddev_time, 3) if stddev_time else 0,
+                    'rows': num_rows
+                })
+        
+        # Calculate overall metrics
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_queries,
+                    SUM(calls) as total_calls,
+                    SUM(total_exec_time) as total_time,
+                    AVG(mean_exec_time) as avg_mean_time,
+                    SUM(rows) as total_rows
+                FROM pg_stat_statements
+                WHERE query NOT LIKE '%pg_stat_statements%'
+                    AND query NOT LIKE '%pg_extension%';
+            """)
+            
+            row = cursor.fetchone()
+            total_queries, total_calls, total_time, avg_mean_time, total_rows = row
+            
+            results['metrics'] = {
+                'total_queries': total_queries or 0,
+                'total_calls': total_calls or 0,
+                'total_time': round(total_time, 2) if total_time else 0,
+                'avg_mean_time': round(avg_mean_time, 3) if avg_mean_time else 0,
+                'total_rows': total_rows or 0
+            }
+        
+        # Generate latency histogram data
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    CASE 
+                        WHEN mean_exec_time < 0.1 THEN '0-0.1ms'
+                        WHEN mean_exec_time < 1 THEN '0.1-1ms'
+                        WHEN mean_exec_time < 10 THEN '1-10ms'
+                        WHEN mean_exec_time < 100 THEN '10-100ms'
+                        WHEN mean_exec_time < 1000 THEN '100-1000ms'
+                        ELSE '1000ms+'
+                    END as latency_bucket,
+                    COUNT(*) as query_count
+                FROM pg_stat_statements
+                WHERE query NOT LIKE '%pg_stat_statements%'
+                    AND query NOT LIKE '%pg_extension%'
+                GROUP BY latency_bucket
+                ORDER BY 
+                    MIN(CASE 
+                        WHEN mean_exec_time < 0.1 THEN 1
+                        WHEN mean_exec_time < 1 THEN 2
+                        WHEN mean_exec_time < 10 THEN 3
+                        WHEN mean_exec_time < 100 THEN 4
+                        WHEN mean_exec_time < 1000 THEN 5
+                        ELSE 6
+                    END);
+            """)
+            
+            histogram_data = cursor.fetchall()
+            labels = []
+            counts = []
+            
+            for bucket, count in histogram_data:
+                labels.append(bucket)
+                counts.append(count)
+            
+            results['latency_histogram'] = {
+                'labels': json.dumps(labels),
+                'data': json.dumps(counts)
+            }
+        
+        # Get cache hit ratio
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    ROUND(
+                        100.0 * sum(shared_blks_hit) / NULLIF(sum(shared_blks_hit) + sum(shared_blks_read), 0),
+                        2
+                    ) as cache_hit_ratio
+                FROM pg_stat_statements
+                WHERE query NOT LIKE '%pg_stat_statements%';
+            """)
+            
+            cache_ratio = cursor.fetchone()[0]
+            results['metrics']['cache_hit_ratio'] = cache_ratio if cache_ratio else 0
+            
+    except Exception as e:
+        results['error'] = f"Error querying statistics: {str(e)}"
+    
+    return render(request, 'adbms/monitoring_result.html', {'results': results})

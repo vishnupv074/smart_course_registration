@@ -166,6 +166,16 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **UI Template:** Created `mvcc_result.html` with execution timeline and row version comparison cards
     *   **Dashboard Integration:** Added demo card to ADBMS dashboard in Transaction Isolation Levels section
     *   **Documentation:** Created comprehensive guide at `docs/mvcc_and_visibility.md` covering theory, implementation, visibility rules, VACUUM, and monitoring
+*   **Monitoring & Statistics:** Fully implemented database monitoring demo using PostgreSQL's `pg_stat_statements` extension with:
+    *   **Extension Setup:** Created migration to enable `pg_stat_statements` for query performance tracking
+    *   **Performance Metrics:** Dashboard displaying unique queries, total executions, average execution time, and cache hit ratio
+    *   **Top Queries Analysis:** Interactive table showing 15 slowest queries with execution statistics (calls, total time, mean time, min/max, rows)
+    *   **Latency Histogram:** Chart.js bar chart visualizing query distribution across latency ranges (0-0.1ms, 0.1-1ms, 1-10ms, 10-100ms, 100-1000ms, 1000ms+)
+    *   **Cache Analysis:** Buffer cache hit ratio calculation to identify I/O bottlenecks
+    *   **Sample Workload:** Automatic generation of sample queries if statistics are sparse
+    *   **Interactive UI:** Expandable query details with color-coded performance badges (green/yellow/red)
+    *   **Dashboard Integration:** Added demo card to ADBMS dashboard in Performance & Optimization section
+    *   **Documentation:** Created comprehensive guide at `docs/monitoring_and_statistics.md` covering theory, metrics, use cases, configuration, and optimization strategies
 
 ## 7. Pending / Next Steps
 
@@ -198,8 +208,8 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **Demo Interface:** Interactive dashboard to perform CRUD operations and view real-time audit logs.
     *   **Documentation:** Added detailed concept explanation and comparison with application-level auditing.
 *   **[DONE] MVCC & Visibility:** Demonstrated PostgreSQL's Multi-Version Concurrency Control with row versioning, system columns (xmin, xmax, ctid), and snapshot isolation.
+*   **[DONE] Monitoring & Statistics:** Implemented comprehensive monitoring demo using `pg_stat_statements` to visualize query performance metrics, latency histograms, and cache hit ratios.
 *   **Replication / HA:** Simulate read replica setup and consistency tradeoffs.
 *   **Backup & Restore:** Demonstrate `pg_dump` and `pg_restore` workflows.
-*   **Monitoring & Statistics:** Visualize `pg_stat_statements` and query latency histograms.
 *   **Full-text Search:** Implement search using Postgres Full-Text Search or Elasticsearch.
 *   **Benchmarking:** Create scripts to replay realistic workloads and measure TPS/latency.
