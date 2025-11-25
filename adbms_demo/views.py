@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.db import transaction, connection
 import time
 
@@ -325,7 +325,22 @@ def indexing_benchmark(request):
             'details': explain_output
         })
 
-    return render(request, 'adbms/indexing_result.html', {'results': results})
+    # Calculate improvement metrics
+    without_index_time = results['scenarios'][0]['execution_time']
+    with_index_time = results['scenarios'][1]['execution_time']
+    
+    improvement = 0
+    if without_index_time > 0:
+        improvement = ((without_index_time - with_index_time) / without_index_time) * 100
+        
+    context = {
+        'results': results,
+        'without_index_time': without_index_time,
+        'with_index_time': with_index_time,
+        'improvement_percentage': round(improvement, 1)
+    }
+
+    return render(request, 'adbms/indexing_result.html', context)
 
 
 

@@ -74,8 +74,7 @@
                         </h5>
                         <div class="mb-3">
                             <strong><i class="fas fa-clock"></i> Execution Time:</strong><br>
-                            <span class="text-danger" style="font-size: 1.5rem; font-weight: 700;">{{ without_index_time
-                                }}ms</span>
+                            <span class="text-danger" style="font-size: 1.5rem; font-weight: 700;">{{ without_index_time }}ms</span>
                         </div>
                         <div class="performance-bar">
                             <div class="performance-fill"
@@ -97,8 +96,7 @@
                         </h5>
                         <div class="mb-3">
                             <strong><i class="fas fa-clock"></i> Execution Time:</strong><br>
-                            <span class="text-success" style="font-size: 1.5rem; font-weight: 700;">{{ with_index_time
-                                }}ms</span>
+                            <span class="text-success" style="font-size: 1.5rem; font-weight: 700;">{{ with_index_time }}ms</span>
                         </div>
                         {% widthratio with_index_time without_index_time 100 as percent %}
                         <div class="performance-bar">
