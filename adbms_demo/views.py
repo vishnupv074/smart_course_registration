@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.db import transaction, connection
+from django.db import transaction, connection, connections
 import time
 
 from courses.models import Section
@@ -1097,3 +1097,97 @@ def monitoring_stats_demo(request):
         results['error'] = f"Error querying statistics: {str(e)}"
     
     return render(request, 'adbms/monitoring_result.html', {'results': results})
+
+def replication_demo(request):
+    """
+    Demonstrates Replication Lag and High Availability.
+    
+    THEORY:
+    Replication copies data from a Primary node to one or more Replica nodes.
+    - Asynchronous Replication: Primary commits immediately, Replica catches up later.
+      Pros: High write performance. Cons: Potential data loss on failover, Replication Lag.
+    - Synchronous Replication: Primary waits for Replica to confirm write.
+      Pros: Zero data loss. Cons: Lower write performance, Primary blocks if Replica is down.
+      
+    This demo simulates Asynchronous Replication Lag by writing to Primary and immediately reading from Replica.
+    """
+    results = {
+        'primary_value': None,
+        'replica_value': None,
+        'primary_lsn': None,
+        'replica_lsn': None,
+        'lag_bytes': 0,
+        'is_synced': False,
+        'error': None
+    }
+    
+    try:
+        # Use Section 1 for demo. Ensure it exists.
+        section_id = 1
+        
+        # 1. Write to Primary
+        with transaction.atomic(using='default'):
+            # Lock row to prevent concurrent interference during this demo step
+            try:
+                section = Section.objects.using('default').select_for_update().get(id=section_id)
+            except Section.DoesNotExist:
+                # Create if not exists (unlikely in this demo setup but good for safety)
+                from courses.models import Course
+                course = Course.objects.first()
+                if not course:
+                     # Fallback if no courses
+                     results['error'] = "No courses/sections found. Please seed data first."
+                     return render(request, 'adbms/replication_result.html', {'results': results})
+                section = Section.objects.create(course=course, section_number='001', capacity=50)
+
+            # Update capacity to a random value to ensure a change is visible
+            import random
+            new_capacity = random.randint(10, 100)
+            section.capacity = new_capacity
+            section.save()
+            results['primary_value'] = new_capacity
+        
+        # 2. Read from Replica immediately
+        try:
+            # We use a raw cursor or force a fresh read to avoid any Django caching, 
+            # though using('replica') should be enough.
+            section_replica = Section.objects.using('replica').get(id=section_id)
+            results['replica_value'] = section_replica.capacity
+        except Exception as e:
+            results['error'] = f"Replica Read Error: {str(e)}"
+            results['replica_value'] = "N/A"
+
+        # 3. Get LSNs (Log Sequence Numbers)
+        # Primary LSN
+        with connections['default'].cursor() as cursor:
+            cursor.execute("SELECT pg_current_wal_lsn()")
+            row = cursor.fetchone()
+            if row:
+                results['primary_lsn'] = row[0]
+        
+        # Replica LSN
+        try:
+            with connections['replica'].cursor() as cursor:
+                cursor.execute("SELECT pg_last_wal_replay_lsn()")
+                row = cursor.fetchone()
+                if row:
+                    results['replica_lsn'] = row[0]
+                
+                # Calculate lag size
+                if results['primary_lsn'] and results['replica_lsn']:
+                    cursor.execute("SELECT pg_wal_lsn_diff(%s, %s)", [results['primary_lsn'], results['replica_lsn']])
+                    row = cursor.fetchone()
+                    if row:
+                        results['lag_bytes'] = row[0]
+        except Exception as e:
+            if not results['error']:
+                results['error'] = f"Replica Metadata Error: {str(e)}"
+
+        # Check sync status
+        if results['primary_value'] is not None and results['replica_value'] != "N/A":
+            results['is_synced'] = (results['primary_value'] == results['replica_value'])
+            
+    except Exception as e:
+        results['error'] = f"Demo Error: {str(e)}"
+
+    return render(request, 'adbms/replication_result.html', {'results': results})

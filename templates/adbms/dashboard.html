@@ -381,4 +381,36 @@
         </a>
     </div>
 </div>
+
+<!-- Availability & Reliability -->
+<div class="category-header">
+    <h3>
+        <span class="category-icon" style="background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%); color: white;">
+            <i class="fas fa-server"></i>
+        </span>
+        Availability & Reliability
+    </h3>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <a href="{% url 'replication-demo' %}" class="text-decoration-none">
+            <div class="card demo-card category-isolation hover-lift" style="border-top-color: var(--success);">
+                <div class="card-body p-4">
+                    <div class="demo-icon icon-isolation" style="background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);">
+                        <i class="fas fa-copy"></i>
+                    </div>
+                    <h4 class="demo-title">Replication & HA</h4>
+                    <p class="demo-subtitle">Master-Slave Replication</p>
+                    <p class="demo-description">
+                        Demonstrates data consistency tradeoffs and replication lag by writing to a Primary node and reading from an asynchronous Read Replica.
+                    </p>
+                    <div class="mt-3">
+                        <span class="badge bg-success">Availability Demo</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
 {% endblock %}

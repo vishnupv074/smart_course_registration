@@ -156,7 +156,7 @@
                             <strong>{{ section.semester }}</strong>
                             <br><small class="text-muted">Sec {{ section.id }}</small>
                         </td>
-                        <td>{{ section.instructor.get_full_name|default:section.instructor.username }}</td>
+                        <td>{{ section.instructor.display_name }}</td>
                         <td>
                             <i class="fas fa-clock text-muted me-1"></i>
                             {{ section.schedule }}

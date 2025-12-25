@@ -27,18 +27,41 @@ services:
 
   db:
     image: postgres:16
-    command: postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=all
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./config/db/primary/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/db/primary/pg_hba.conf:/etc/postgresql/pg_hba.conf
     environment:
       - POSTGRES_DB=course_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db_replica:
+    image: postgres:16
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./config/db/replica/entrypoint.sh:/usr/local/bin/custom-entrypoint.sh
+    entrypoint: ["custom-entrypoint.sh"]
+    command: postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
 
   redis:
     image: redis:7-alpine
 
 volumes:
   postgres_data:
+  postgres_replica_data:

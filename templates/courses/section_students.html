@@ -111,7 +111,9 @@
                             </span>
                             {% else %}
                             <span class="badge bg-success" style="font-size: 1rem; padding: 0.5rem 1rem;">
-                                <i class="fas fa-check-circle"></i> {{ section.capacity|add:"-enrolled_count" }} Spots
+                            <i class="fas fa-check-circle"></i>
+                                {% widthratio enrolled_count 1 -1 as negative_enrolled %}
+                                {{ section.capacity|add:negative_enrolled }} Spots
                                 Available
                             </span>
                             {% endif %}
@@ -120,7 +122,7 @@
                     <div class="enrollment-progress">
                         {% widthratio enrolled_count section.capacity 100 as percent %}
                         <div class="enrollment-progress-fill"
-                            style="width: {% if percent > 100 %}100{% else %}{{ percent }}{% endif %}%"></div>
+                            style="width: {% if percent > 100 %}100{% else %}{{ percent|default:'0' }}{% endif %}%"></div>
                     </div>
                 </div>
 
@@ -150,12 +152,9 @@
                                             {% endif %}
                                         </div>
                                         <div>
-                                            {% if enrollment.student.first_name %}
-                                            <strong>{{ enrollment.student.first_name }} {{ enrollment.student.last_name
-                                                }}</strong>
-                                            {% else %}
-                                            <em class="text-muted">Name not set</em>
-                                            {% endif %}
+                                            <strong>{{ enrollment.student.display_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ enrollment.student.email|default:"N/A" }}</small>
                                         </div>
                                     </div>
                                 </td>

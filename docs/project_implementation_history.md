@@ -176,6 +176,13 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **Interactive UI:** Expandable query details with color-coded performance badges (green/yellow/red)
     *   **Dashboard Integration:** Added demo card to ADBMS dashboard in Performance & Optimization section
     *   **Documentation:** Created comprehensive guide at `docs/monitoring_and_statistics.md` covering theory, metrics, use cases, configuration, and optimization strategies
+*   **Replication & HA:** Fully implemented Master-Slave Replication demo with:
+    *   **Docker Infrastructure:** Added `db_replica` container with `pg_basebackup` bootstrapping.
+    *   **Configuration:** Configured `wal_level=replica` on Primary and `hot_standby=on` on Replica.
+    *   **Django Routing:** Configured `replica` database connection in `settings.py`.
+    *   **Demo View:** Implemented `replication_demo` to visualize replication lag and LSN differences.
+    *   **UI Template:** Created `replication_result.html` and updated Dashboard.
+    *   **Documentation:** Created `docs/replication_and_ha.md`.
 
 ## 7. Pending / Next Steps
 
@@ -209,7 +216,7 @@ These features are located in the `adbms_demo` app and accessible via the **ADBM
     *   **Documentation:** Added detailed concept explanation and comparison with application-level auditing.
 *   **[DONE] MVCC & Visibility:** Demonstrated PostgreSQL's Multi-Version Concurrency Control with row versioning, system columns (xmin, xmax, ctid), and snapshot isolation.
 *   **[DONE] Monitoring & Statistics:** Implemented comprehensive monitoring demo using `pg_stat_statements` to visualize query performance metrics, latency histograms, and cache hit ratios.
-*   **Replication / HA:** Simulate read replica setup and consistency tradeoffs.
+*   **[DONE] Replication / HA:** Simulate read replica setup and consistency tradeoffs.
 *   **Backup & Restore:** Demonstrate `pg_dump` and `pg_restore` workflows.
 *   **Full-text Search:** Implement search using Postgres Full-Text Search or Elasticsearch.
 *   **Benchmarking:** Create scripts to replay realistic workloads and measure TPS/latency.

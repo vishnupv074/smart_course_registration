@@ -11,6 +11,10 @@ class User(AbstractUser):
     email_verified = models.BooleanField(default=False)
     verification_token = models.CharField(max_length=100, blank=True, null=True)
 
+    @property
+    def display_name(self):
+        return self.get_full_name() or self.username
+
     def __str__(self):
         return f"{self.username} ({self.role})"
 
