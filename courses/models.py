@@ -1,3 +1,5 @@
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector
 from django.db import models
 from django.conf import settings
 
@@ -11,6 +13,14 @@ class Course(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.title}"
+
+    class Meta:
+        indexes = [
+            GinIndex(
+                SearchVector('title', 'description', config='english'),
+                name='course_search_vector_idx'
+            )
+        ]
 
 class Section(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='sections')

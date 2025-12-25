@@ -1191,3 +1191,53 @@ def replication_demo(request):
         results['error'] = f"Demo Error: {str(e)}"
 
     return render(request, 'adbms/replication_result.html', {'results': results})
+
+
+def full_text_search_demo(request):
+    """
+    Demonstrates Full-Text Search (FTS) vs Standard Pattern Matching (LIKE).
+    
+    THEORY:
+    - Standard 'icontains' uses LIKE '%...%' which cannot use standard B-Tree indexes efficiently (requires scanning).
+    - Full-Text Search uses pre-computed vectors (tsvector) and GIN indexes for fast lookups.
+    - FTS also supports stemming (e.g. 'run' matches 'running') and ranking.
+    """
+    from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+    from django.db.models import Q
+    from courses.models import Course
+    
+    query = request.GET.get('q', '')
+    
+    standard_results = []
+    fts_results = []
+    standard_time = 0
+    fts_time = 0
+    
+    if query:
+        # 1. Standard Search (LIKE)
+        start_time = time.time()
+        standard_results = list(Course.objects.filter(
+            Q(title__icontains=query) | Q(description__icontains=query)
+        )[:20]) # Limit to 20 for display
+        standard_time = (time.time() - start_time) * 1000  # ms
+        
+        # 2. Full-Text Search (TSVECTOR + GIN)
+        start_time = time.time()
+        # We use the same 'english' config as the index
+        vector = SearchVector('title', 'description', config='english')
+        search_query = SearchQuery(query, config='english')
+        
+        fts_results = list(Course.objects.annotate(
+            rank=SearchRank(vector, search_query)
+        ).filter(
+            rank__gte=0.01  # Filter out low relevance
+        ).order_by('-rank')[:20])
+        fts_time = (time.time() - start_time) * 1000  # ms
+
+    return render(request, 'adbms_demo/full_text_search.html', {
+        'query': query,
+        'standard_results': standard_results,
+        'fts_results': fts_results,
+        'standard_time': f"{standard_time:.2f}",
+        'fts_time': f"{fts_time:.2f}",
+    })

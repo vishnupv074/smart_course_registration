@@ -15,4 +15,5 @@ urlpatterns = [
     path('mvcc-visibility/', views.mvcc_visibility_demo, name='mvcc-visibility'),
     path('monitoring/', views.monitoring_stats_demo, name='monitoring-stats'),
     path('replication/', views.replication_demo, name='replication-demo'),
+    path('full-text-search/', views.full_text_search_demo, name='full-text-search'),
 ]

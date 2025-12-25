@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Full-Text Search Demo{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="bi bi-search me-2"></i>Full-Text Search vs Standard Search
+        </h1>
+        <a href="{% url 'adbms-dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Theory Card -->
+    <div class="card shadow-sm mb-4 border-primary border-start border-4">
+        <div class="card-body">
+            <h5 class="card-title text-primary"><i class="bi bi-info-circle me-2"></i>Concept: Full-Text Search (tsvector + GIN)</h5>
+            <p class="card-text">
+                Standard pattern matching (<code>LIKE '%query%'</code>) is slow on large datasets because it requires scanning every row.
+                Full-Text Search uses <strong>Generalized Inverted Indexes (GIN)</strong> and pre-computed <strong>tsvector</strong> data to perform instant lookups.
+                It also supports linguistics (stemming) and ranking.
+            </p>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search courses (e.g., 'computing', 'biology', 'manag')..." value="{{ query }}">
+                    </div>
+                    <div class="form-text">Try searching for word stems like 'program' (matches 'programming') or 'teach' (matches 'teacher').</div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if query %}
+    <div class="row">
+        <!-- Standard Search Results -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Standard Search (ILIKE)</h5>
+                    <span class="badge bg-secondary">{{ standard_time }} ms</span>
+                </div>
+                <div class="card-body">
+                    {% if standard_results %}
+                        <div class="list-group list-group-flush">
+                            {% for course in standard_results %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ course.code }}</h6>
+                                    </div>
+                                    <p class="mb-1">{{ course.title }}</p>
+                                    <small class="text-muted text-truncate d-block" style="max-width: 100%;">{{ course.description }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning m-3">
+                            No results found using standard search.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Full-Text Search Results -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Full-Text Search (GIN)</h5>
+                    <span class="badge bg-white text-success">{{ fts_time }} ms</span>
+                </div>
+                <div class="card-body">
+                    {% if fts_results %}
+                        <div class="list-group list-group-flush">
+                            {% for course in fts_results %}
+                                <div class="list-group-item border-success-subtle">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1 fw-bold text-success">{{ course.code }}</h6>
+                                        <small class="badge bg-success-subtle text-success-emphasis">Rank: {{ course.rank|floatformat:2 }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ course.title }}</p>
+                                    <small class="text-muted text-truncate d-block" style="max-width: 100%;">{{ course.description }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning m-3">
+                            No results found using full-text search.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
