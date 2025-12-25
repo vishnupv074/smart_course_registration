@@ -1,38 +1,48 @@
-# Partitioning Demo Verification Walkthrough
+# Replication & HA Demo Verification Walkthrough
 
 ## Overview
-This walkthrough documents the verification of the **Table Partitioning** feature in the Smart Course Registration System. The goal was to confirm that partitioning is correctly implemented and provides performance benefits through **Partition Pruning**.
+This walkthrough documents the verification of the **Replication & High Availability** feature. The goal is to confirm that the Master-Slave replication is working and that the demo correctly visualizes replication lag.
 
 ## Verification Steps
 
-### 1. Database Schema Verification
-We verified that the `adbms_demo_partitionedenrollment` table is correctly partitioned by `LIST (semester)`.
+### 1. Infrastructure Setup
+We updated `docker-compose.yml` to include a `db_replica` service.
+
+**Action Required:**
+You must restart the Docker containers to apply the changes.
+```bash
+docker-compose down
+docker-compose up -d --build
+```
+
+### 2. Replication Status Check
+Verify that the replica is running and replicating.
 
 **Command:**
 ```bash
-docker-compose exec db psql -U postgres -d course_db -c "\d+ adbms_demo_partitionedenrollment"
+docker-compose logs db_replica
 ```
+**Expected Output:**
+You should see logs indicating:
+- `entering standby mode`
+- `started streaming WAL from primary`
+- `consistent recovery state reached`
 
-**Result:**
-The table exists and has the following partitions:
-- `adbms_demo_partitionedenrollment_fall2024`
-- `adbms_demo_partitionedenrollment_spring2025`
-- `adbms_demo_partitionedenrollment_fall2025`
-- `adbms_demo_partitionedenrollment_spring2026`
+### 3. Running the Demo
+Navigate to the ADBMS Dashboard and select "Replication & HA".
 
-### 2. Performance Benchmark
-We ran the partitioning demo which compares a query on a standard table vs. a partitioned table.
+**URL:** `http://localhost:8000/adbms/replication/`
 
-**URL:** `http://localhost:8000/adbms/partitioning/`
+**Expected Results:**
+- **Primary Value:** Shows the new capacity set on the Primary.
+- **Replica Value:** Shows the value read from the Replica.
+- **Sync Status:**
+    - If "Synced": Replication was fast enough (common in low-load dev env).
+    - If "Lagging": The replica hasn't caught up yet.
+- **LSN Values:** Should be identical or very close.
 
-**Results:**
-
-| Metric | Non-Partitioned Table | Partitioned Table |
-| :--- | :--- | :--- |
-| **Query** | `SELECT * FROM non_partitioned WHERE semester = 'Fall 2024'` | `SELECT * FROM partitioned WHERE semester = 'Fall 2024'` |
-| **Execution Time** | **1.784 ms** | **0.750 ms** |
-| **Plan Node** | `Seq Scan` on `adbms_demo_nonpartitionedenrollment` | `Seq Scan` on `adbms_demo_partitionedenrollment_fall2024` |
-| **Rows Filtered** | 15,051 (Scanned all rows) | 0 (Scanned only relevant partition) |
-
-### Conclusion
-The demo successfully demonstrates **Partition Pruning**. The query on the partitioned table was significantly faster (~2.3x) because it only scanned the relevant partition (`fall2024`), whereas the non-partitioned query had to scan the entire table and filter out 75% of the rows.
+### 4. Troubleshooting
+If the replica fails to start:
+- Check if `config/db/primary/pg_hba.conf` is correctly mounted and allows replication.
+- Check if `config/db/primary/postgresql.conf` has `wal_level = replica`.
+- Ensure `db` service is healthy before `db_replica` starts.
